@@ -10,9 +10,6 @@
     
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- PapaParse -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <!-- Google Fonts: Kanit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -694,76 +691,85 @@
         document.getElementById('close-modal-btn-icon').addEventListener('click', closeModal);
         document.getElementById('modal-backdrop').addEventListener('click', closeModal);
 
-        function loadCSVData() {
-            // ดึงไฟล์ที่ถูกต้องมาใช้งาน ถ้าโหลดไม่สำเร็จให้รันข้อมูลจำลอง (Fallback)
-            Papa.parse('fcce47ef.csv', {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) { processCSVData(results.data); },
-                error: function(err) {
-                    console.warn("ไม่สามารถอ่านไฟล์ CSV ได้ (หรือรันจาก Local File), กำลังใช้ข้อมูลจำลองแทน", err);
-                    useMockData();
+        // --- ข้อมูลจำลอง (Mock Data) โดยไม่ต้องใช้ไฟล์ CSV ---
+        function initApp() {
+            const mockStatus = (isDone) => isDone ? 'ประเมินแล้ว' : 'ยังไม่ประเมิน';
+            
+            // จำลองข้อมูลพนักงานและคะแนน (1-5) ทั้ง 11 ข้อ
+            employeeList = [
+                { 
+                    id: 1, name: 'นาย สมชาย รักดี', 
+                    rounds: { 
+                        30: { status: mockStatus(true), scores: [4, 4, 3, 5, 4, 4, 5, 4, 4, 5, 4] }, 
+                        60: { status: mockStatus(true), scores: [4, 5, 4, 5, 5, 4, 5, 5, 5, 5, 4] }, 
+                        90: { status: mockStatus(false), scores: null }, 
+                        119: { status: mockStatus(false), scores: null } 
+                    } 
+                },
+                { 
+                    id: 2, name: 'นางสาว สมหญิง จริงใจ', 
+                    rounds: { 
+                        30: { status: mockStatus(true), scores: [3, 4, 3, 4, 3, 4, 4, 5, 4, 4, 3] }, 
+                        60: { status: mockStatus(false), scores: null }, 
+                        90: { status: mockStatus(false), scores: null }, 
+                        119: { status: mockStatus(false), scores: null } 
+                    } 
+                },
+                { 
+                    id: 3, name: 'นาย พิชัย กล้าหาญ', 
+                    rounds: { 
+                        30: { status: mockStatus(true), scores: [5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 5] }, 
+                        60: { status: mockStatus(true), scores: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5] }, 
+                        90: { status: mockStatus(true), scores: [4, 5, 4, 5, 4, 5, 4, 5, 5, 5, 4] }, 
+                        119: { status: mockStatus(true), scores: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5] } 
+                    } 
+                },
+                { 
+                    id: 4, name: 'นาง มานี ใจดี', 
+                    rounds: { 
+                        30: { status: mockStatus(false), scores: null }, 
+                        60: { status: mockStatus(false), scores: null }, 
+                        90: { status: mockStatus(false), scores: null }, 
+                        119: { status: mockStatus(false), scores: null } 
+                    } 
+                },
+                { 
+                    id: 5, name: 'นาย อดิศักดิ์ มั่นคง', 
+                    rounds: { 
+                        30: { status: mockStatus(true), scores: [3, 3, 3, 4, 3, 3, 4, 4, 3, 4, 3] }, 
+                        60: { status: mockStatus(true), scores: [4, 3, 4, 4, 4, 3, 4, 4, 4, 4, 3] }, 
+                        90: { status: mockStatus(true), scores: [4, 4, 4, 5, 4, 4, 4, 5, 4, 4, 4] }, 
+                        119: { status: mockStatus(false), scores: null } 
+                    } 
                 }
-            });
-        }
-
-        function processCSVData(data) {
-            employeeList = [];
-            let counts = {
-                all: { evaluated: 0, pending: 0 },
-                30: { evaluated: 0, pending: 0 }, 60: { evaluated: 0, pending: 0 },
-                90: { evaluated: 0, pending: 0 }, 119: { evaluated: 0, pending: 0 }
+            ];
+            
+            // คำนวณภาพรวม (ประเมินแล้ว / รอประเมิน) สำหรับกราฟพายและการ์ดด้านบน
+            let counts = { 
+                all: { evaluated: 0, pending: 0 }, 
+                30: { evaluated: 0, pending: 0 }, 
+                60: { evaluated: 0, pending: 0 }, 
+                90: { evaluated: 0, pending: 0 }, 
+                119: { evaluated: 0, pending: 0 } 
             };
 
-            data.forEach((row, index) => {
-                const name = row['ชื่อพนักงาน'] || row['Name'] || `พนักงานคนที่ ${index + 1}`;
-                const s30 = row['สถานะ 30 วัน'] || 'ยังไม่ประเมิน';
-                const s60 = row['สถานะ 60 วัน'] || 'ยังไม่ประเมิน';
-                const s90 = row['สถานะ 90 วัน'] || 'ยังไม่ประเมิน';
-                const s119 = row['สถานะ 119 วัน'] || 'ยังไม่ประเมิน';
-
-                // ใช้คะแนนจำลอง หากใน CSV ไม่ได้ระบุคอลัมน์คะแนนมา
-                const rounds = {
-                    30: { status: s30, scores: generateMockScores(s30) },
-                    60: { status: s60, scores: generateMockScores(s60) },
-                    90: { status: s90, scores: generateMockScores(s90) },
-                    119: { status: s119, scores: generateMockScores(s119) }
-                };
-
-                employeeList.push({ id: index + 1, name: name, rounds: rounds });
-
+            employeeList.forEach(emp => {
                 let isEvalAny = false;
                 [30, 60, 90, 119].forEach(r => {
-                    if (rounds[r].status.includes('ประเมินแล้ว')) {
+                    if (emp.rounds[r].status === 'ประเมินแล้ว') {
                         counts[r].evaluated++;
                         isEvalAny = true;
-                    } else { counts[r].pending++; }
+                    } else {
+                        counts[r].pending++;
+                    }
                 });
-
+                
+                // ถ้ามีประเมินผ่านอย่างน้อย 1 รอบ ให้นับรวมใน "ทั้งหมด" ว่าประเมินแล้ว
                 if (isEvalAny) counts.all.evaluated++;
                 else counts.all.pending++;
             });
 
-            updateDashboard(counts);
-        }
-
-        function useMockData() {
-            const mockStatus = (isDone) => isDone ? 'ประเมินแล้ว' : 'ยังไม่ประเมิน';
-            employeeList = [
-                { id: 1, name: 'นาย สมชาย รักดี', rounds: { 30: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 60: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 90: { status: mockStatus(false), scores: null }, 119: { status: mockStatus(false), scores: null } } },
-                { id: 2, name: 'นางสาว สมหญิง จริงใจ', rounds: { 30: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 60: { status: mockStatus(false), scores: null }, 90: { status: mockStatus(false), scores: null }, 119: { status: mockStatus(false), scores: null } } },
-                { id: 3, name: 'นาย พิชัย กล้าหาญ', rounds: { 30: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 60: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 90: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 119: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') } } },
-                { id: 4, name: 'นาง มานี ใจดี', rounds: { 30: { status: mockStatus(false), scores: null }, 60: { status: mockStatus(false), scores: null }, 90: { status: mockStatus(false), scores: null }, 119: { status: mockStatus(false), scores: null } } }
-            ];
-            
-            let counts = { 
-                all: { evaluated: 3, pending: 1 }, 
-                30: { evaluated: 3, pending: 1 }, 
-                60: { evaluated: 2, pending: 2 }, 
-                90: { evaluated: 1, pending: 3 }, 
-                119: { evaluated: 1, pending: 3 } 
-            };
+            // อัปเดตหน้าจอทั้งหมด
             updateDashboard(counts);
         }
 
@@ -778,7 +784,7 @@
             renderSummaryCards();
             renderEmployeeList(employeeList);
             
-            // Allow DOM to update before initializing Pie charts
+            // หน่วงเวลาเล็กน้อยให้ DOM อัปเดตเสร็จก่อนวาดกราฟ
             setTimeout(() => initPieCharts(counts), 100);
         }
 
@@ -789,7 +795,8 @@
         `;
         document.head.appendChild(style);
 
-        window.onload = loadCSVData;
+        // เปลี่ยนให้รันฟังก์ชัน initApp ทันทีที่โหลดหน้าเว็บเสร็จ
+        window.onload = initApp;
     </script>
 </body>
 </html>
