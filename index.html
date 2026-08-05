@@ -10,6 +10,9 @@
     
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- PapaParse (สำหรับอ่านไฟล์ CSV) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <!-- Google Fonts: Noto Sans Thai -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -159,21 +162,10 @@
     </div>
 
     <script>
-        // --- Mock Data ---
-        const summaryData = [
-            { id: 'all', title: 'ทั้งหมด', evaluated: 120, pending: 15 },
-            { id: '30', title: 'รอบ 30 วัน', evaluated: 30, pending: 5 },
-            { id: '60', title: 'รอบ 60 วัน', evaluated: 28, pending: 7 },
-            { id: '90', title: 'รอบ 90 วัน', evaluated: 35, pending: 2 },
-            { id: '119', title: 'รอบ 119 วัน', evaluated: 27, pending: 1 },
-        ];
-
-        const employeeList = [
-            { id: 1, name: 'นาย A (สมชาย รักดี)', status30: 'ประเมินแล้ว', status60: 'ประเมินแล้ว', status90: 'ยังไม่ประเมิน', status119: 'ยังไม่ประเมิน' },
-            { id: 2, name: 'นาย B (พิชัย กล้าหาญ)', status30: 'ประเมินแล้ว', status60: 'ยังไม่ประเมิน', status90: 'ยังไม่ประเมิน', status119: 'ยังไม่ประเมิน' },
-            { id: 3, name: 'นางสาว C (สมหญิง จริงใจ)', status30: 'ประเมินแล้ว', status60: 'ประเมินแล้ว', status90: 'ประเมินแล้ว', status119: 'ประเมินแล้ว' },
-            { id: 4, name: 'นาย D (มานะ อดทน)', status30: 'ยังไม่ประเมิน', status60: 'ยังไม่ประเมิน', status90: 'ยังไม่ประเมิน', status119: 'ยังไม่ประเมิน' },
-        ];
+        // --- State Data ---
+        let summaryData = [];
+        let employeeList = [];
+        let chartInstance = null;
 
         // --- DOM Elements ---
         const summaryContainer = document.getElementById('summary-cards-container');
@@ -295,27 +287,28 @@
             
             const filteredEmployees = employeeList.filter(emp => {
                 const matchName = emp.name.toLowerCase().includes(searchTerm);
-                
-                // If round filter is specific, we might want to only show people relevant to that round, 
-                // but usually the table shows everyone and we just filter by name. 
-                // For this demo, let's just filter by name to keep the table layout intact.
-                // If you want to filter out rows based on round, you can add logic here.
                 return matchName;
             });
             
             renderEmployeeList(filteredEmployees);
         }
 
-        function initChart() {
+        function initChart(avgScores) {
             const ctx = document.getElementById('evaluationChart').getContext('2d');
-            new Chart(ctx, {
+            
+            // เคลียร์กราฟเก่าออกก่อนวาดใหม่ (ป้องกันปัญหากราฟซ้อนทับกัน)
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['รอบ 30 วัน', 'รอบ 60 วัน', 'รอบ 90 วัน', 'รอบ 119 วัน'],
                     datasets: [
                         {
                             label: 'คะแนนเฉลี่ยรวม (%)',
-                            data: [75, 82, 88, 91],
+                            data: avgScores || [0, 0, 0, 0],
                             backgroundColor: 'rgba(59, 130, 246, 0.8)', // blue-500
                             borderColor: 'rgba(37, 99, 235, 1)',
                             borderWidth: 1,
@@ -395,11 +388,135 @@
         closeModalBtnIcon.addEventListener('click', closeModal);
         modalBackdrop.addEventListener('click', closeModal);
 
-        // --- Init ---
-        window.onload = () => {
+        // --- Data Fetching & Processing ---
+        function loadCSVData() {
+            // เรียกอ่านไฟล์ 691b5fd7.csv ที่อยู่ในโฟลเดอร์เดียวกัน
+            Papa.parse('691b5fd7.csv', {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    processCSVData(results.data);
+                },
+                error: function(err) {
+                    console.error("ไม่สามารถโหลดไฟล์ 691b5fd7.csv ได้ (หากรันไฟล์ในเครื่องโดยตรงอาจติด CORS) ระบบจะใช้ข้อมูลจำลองแทน", err);
+                    useMockData();
+                }
+            });
+        }
+
+        function processCSVData(data) {
+            employeeList = [];
+            
+            // ตัวแปรสำหรับนับสรุปผล
+            let counts = {
+                all: { evaluated: 0, pending: 0 },
+                30: { evaluated: 0, pending: 0, totalScore: 0, scoreCount: 0 },
+                60: { evaluated: 0, pending: 0, totalScore: 0, scoreCount: 0 },
+                90: { evaluated: 0, pending: 0, totalScore: 0, scoreCount: 0 },
+                119: { evaluated: 0, pending: 0, totalScore: 0, scoreCount: 0 }
+            };
+
+            // ประมวลผลทีละแถวจาก CSV
+            data.forEach((row, index) => {
+                // ดึงข้อมูลตามชื่อหัวคอลัมน์ (ปรับแก้ชื่อด้านล่างนี้ให้ตรงกับในไฟล์ CSV ของคุณ)
+                const name = row['ชื่อพนักงาน'] || row['Name'] || `พนักงานคนที่ ${index + 1}`;
+                
+                const status30 = row['สถานะ 30 วัน'] || row['รอบ 30 วัน'] || 'ยังไม่ประเมิน';
+                const status60 = row['สถานะ 60 วัน'] || row['รอบ 60 วัน'] || 'ยังไม่ประเมิน';
+                const status90 = row['สถานะ 90 วัน'] || row['รอบ 90 วัน'] || 'ยังไม่ประเมิน';
+                const status119 = row['สถานะ 119 วัน'] || row['รอบ 119 วัน'] || 'ยังไม่ประเมิน';
+
+                const score30 = parseFloat(row['คะแนน 30 วัน']) || 0;
+                const score60 = parseFloat(row['คะแนน 60 วัน']) || 0;
+                const score90 = parseFloat(row['คะแนน 90 วัน']) || 0;
+                const score119 = parseFloat(row['คะแนน 119 วัน']) || 0;
+
+                // เพิ่มเข้าในรายชื่อตาราง
+                employeeList.push({
+                    id: index + 1,
+                    name: name,
+                    status30: status30,
+                    status60: status60,
+                    status90: status90,
+                    status119: status119
+                });
+
+                // คำนวณสรุปตัวเลขการประเมิน และ ยอดรวมคะแนน
+                const rounds = [
+                    { key: 30, status: status30, score: score30 },
+                    { key: 60, status: status60, score: score60 },
+                    { key: 90, status: status90, score: score90 },
+                    { key: 119, status: status119, score: score119 }
+                ];
+
+                let isEvaluatedInAnyRound = false;
+
+                rounds.forEach(r => {
+                    if (r.status.includes('ประเมินแล้ว') || r.status.includes('เสร็จ')) {
+                        counts[r.key].evaluated++;
+                        counts[r.key].totalScore += r.score;
+                        counts[r.key].scoreCount++;
+                        isEvaluatedInAnyRound = true;
+                    } else {
+                        counts[r.key].pending++;
+                    }
+                });
+
+                if (isEvaluatedInAnyRound) {
+                    counts.all.evaluated++;
+                } else {
+                    counts.all.pending++;
+                }
+            });
+
+            // สร้างข้อมูลสำหรับแสดง Summary Cards
+            summaryData = [
+                { id: 'all', title: 'ทั้งหมด', evaluated: counts.all.evaluated, pending: counts.all.pending },
+                { id: '30', title: 'รอบ 30 วัน', evaluated: counts[30].evaluated, pending: counts[30].pending },
+                { id: '60', title: 'รอบ 60 วัน', evaluated: counts[60].evaluated, pending: counts[60].pending },
+                { id: '90', title: 'รอบ 90 วัน', evaluated: counts[90].evaluated, pending: counts[90].pending },
+                { id: '119', title: 'รอบ 119 วัน', evaluated: counts[119].evaluated, pending: counts[119].pending },
+            ];
+
+            // สร้างข้อมูลคะแนนเฉลี่ยสำหรับกราฟ
+            const avgScores = [
+                counts[30].scoreCount ? (counts[30].totalScore / counts[30].scoreCount).toFixed(2) : 0,
+                counts[60].scoreCount ? (counts[60].totalScore / counts[60].scoreCount).toFixed(2) : 0,
+                counts[90].scoreCount ? (counts[90].totalScore / counts[90].scoreCount).toFixed(2) : 0,
+                counts[119].scoreCount ? (counts[119].totalScore / counts[119].scoreCount).toFixed(2) : 0,
+            ];
+
+            // สั่งอัปเดตหน้าจอ
             renderSummaryCards();
             renderEmployeeList(employeeList);
-            initChart();
+            initChart(avgScores);
+        }
+
+        function useMockData() {
+            summaryData = [
+                { id: 'all', title: 'ทั้งหมด', evaluated: 120, pending: 15 },
+                { id: '30', title: 'รอบ 30 วัน', evaluated: 30, pending: 5 },
+                { id: '60', title: 'รอบ 60 วัน', evaluated: 28, pending: 7 },
+                { id: '90', title: 'รอบ 90 วัน', evaluated: 35, pending: 2 },
+                { id: '119', title: 'รอบ 119 วัน', evaluated: 27, pending: 1 },
+            ];
+
+            employeeList = [
+                { id: 1, name: 'นาย A (สมชาย รักดี)', status30: 'ประเมินแล้ว', status60: 'ประเมินแล้ว', status90: 'ยังไม่ประเมิน', status119: 'ยังไม่ประเมิน' },
+                { id: 2, name: 'นาย B (พิชัย กล้าหาญ)', status30: 'ประเมินแล้ว', status60: 'ยังไม่ประเมิน', status90: 'ยังไม่ประเมิน', status119: 'ยังไม่ประเมิน' },
+                { id: 3, name: 'นางสาว C (สมหญิง จริงใจ)', status30: 'ประเมินแล้ว', status60: 'ประเมินแล้ว', status90: 'ประเมินแล้ว', status119: 'ประเมินแล้ว' },
+                { id: 4, name: 'นาย D (มานะ อดทน)', status30: 'ยังไม่ประเมิน', status60: 'ยังไม่ประเมิน', status90: 'ยังไม่ประเมิน', status119: 'ยังไม่ประเมิน' },
+            ];
+            
+            renderSummaryCards();
+            renderEmployeeList(employeeList);
+            initChart([75, 82, 88, 91]);
+        }
+
+        // --- Init ---
+        window.onload = () => {
+            loadCSVData(); // เริ่มโหลดไฟล์ CSV เมื่อเปิดหน้าจอ
         };
 
     </script>
