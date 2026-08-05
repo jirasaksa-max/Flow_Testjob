@@ -148,38 +148,52 @@
                         <!-- Tabs injected by JS -->
                     </div>
 
-                    <!-- Evaluation Table -->
-                    <div class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
-                        <table class="w-full text-sm text-left">
-                            <thead class="bg-slate-50/80 text-slate-600 border-b border-slate-100">
-                                <tr>
-                                    <th class="px-6 py-4 font-medium w-16 text-center">#</th>
-                                    <th class="px-6 py-4 font-medium">หัวข้อการประเมิน</th>
-                                    <th class="px-6 py-4 font-medium w-40 text-center">คะแนน (1-5)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="evaluation-topics-list" class="divide-y divide-slate-50 bg-white">
-                                <!-- Topics injected here by JS -->
-                            </tbody>
-                        </table>
-                    </div>
+                    <!-- Container สำหรับตารางและสรุปผล (ซ่อนเมื่อดูกราฟ) -->
+                    <div id="modal-table-container">
+                        <!-- Evaluation Table -->
+                        <div class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+                            <table class="w-full text-sm text-left">
+                                <thead class="bg-slate-50/80 text-slate-600 border-b border-slate-100">
+                                    <tr>
+                                        <th class="px-6 py-4 font-medium w-16 text-center">#</th>
+                                        <th class="px-6 py-4 font-medium">หัวข้อการประเมิน</th>
+                                        <th class="px-6 py-4 font-medium w-40 text-center">คะแนน (1-5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="evaluation-topics-list" class="divide-y divide-slate-50 bg-white">
+                                    <!-- Topics injected here by JS -->
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <!-- Summary Result Box -->
-                    <div class="mt-8 bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm flex flex-col md:flex-row">
-                        <!-- Left: Percentage -->
-                        <div class="md:w-1/3 bg-indigo-50/50 p-6 md:border-r border-slate-100 flex flex-col items-center justify-center">
-                            <span class="text-slate-500 text-sm font-medium mb-2">สรุปคะแนนการประเมิน</span>
-                            <div class="text-5xl font-bold text-indigo-600 drop-shadow-sm" id="summary-percentage">
-                                0.0%
+                        <!-- Summary Result Box -->
+                        <div class="mt-8 bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm flex flex-col md:flex-row">
+                            <!-- Left: Percentage -->
+                            <div class="md:w-1/3 bg-indigo-50/50 p-6 md:border-r border-slate-100 flex flex-col items-center justify-center">
+                                <span class="text-slate-500 text-sm font-medium mb-2">สรุปคะแนนการประเมิน</span>
+                                <div class="text-5xl font-bold text-indigo-600 drop-shadow-sm" id="summary-percentage">
+                                    0.0%
+                                </div>
+                            </div>
+                            
+                            <!-- Right: Status Checkboxes -->
+                            <div class="md:w-2/3 p-6 flex flex-col justify-center">
+                                <span class="text-slate-500 text-sm font-medium mb-4 block">ผลการประเมินทดลองงาน</span>
+                                <div class="flex flex-col sm:flex-row gap-6 justify-start items-start sm:items-center" id="summary-checkboxes">
+                                    <!-- Checkboxes injected by JS based on round -->
+                                </div>
                             </div>
                         </div>
-                        
-                        <!-- Right: Status Checkboxes -->
-                        <div class="md:w-2/3 p-6 flex flex-col justify-center">
-                            <span class="text-slate-500 text-sm font-medium mb-4 block">ผลการประเมินทดลองงาน</span>
-                            <div class="flex flex-col sm:flex-row gap-6 justify-start items-start sm:items-center" id="summary-checkboxes">
-                                <!-- Checkboxes injected by JS based on round -->
-                            </div>
+                    </div>
+
+                    <!-- Container สำหรับกราฟเปรียบเทียบ (ซ่อนเมื่อดูตาราง) -->
+                    <div id="modal-chart-container" class="hidden bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                        <div class="mb-4">
+                            <h4 class="text-lg font-medium text-slate-700">เปรียบเทียบคะแนนแต่ละหัวข้อ (ทุกรอบการประเมิน)</h4>
+                            <p class="text-sm text-slate-500 font-light">แสดงเฉพาะรอบที่ได้รับการประเมินแล้ว</p>
+                        </div>
+                        <div class="h-[450px] relative w-full">
+                            <canvas id="modalCompareChart"></canvas>
                         </div>
                     </div>
                     
@@ -193,24 +207,10 @@
         let summaryData = [];
         let employeeList = [];
         let chartInstance = null;
+        let modalChartInstance = null; // เพิ่มตัวแปรสำหรับกราฟใน Modal
         
         let currentModalEmpId = null;
-        let currentModalRound = 30;
-
-        // หัวข้อการประเมิน 11 ข้อ
-        const evaluationTopics = [
-            { id: 1, short: "ความรู้เฉพาะหน้าที่", desc: "<strong>ความรู้เฉพาะหน้าที่</strong> พิจารณาความเข้าใจในหน้าที่ วิธีปฎิบัติงาน ความรอบรู้ และสันทัดในงาน" },
-            { id: 2, short: "การเรียนรู้งาน", desc: "<strong>การเรียนรู้งาน</strong> พิจารณาความสนใจในการเรียนรู้ รู้ขอบเขตของงานที่ต้องปฏิบัติ เรียนรู้งานได้รวดเร็ว สามารถปฎิบัติงานได้" },
-            { id: 3, short: "ความขยัน/เอาใจใส่", desc: "<strong>ความขยันและเอาใจใส่งาน</strong> พิจารณาเป็นผู้ทำงานคล่องแคล่ว ความรวดเร็วในการปฎิบัติงาน ตวามกระตือรือร้น ในการทำงาน" },
-            { id: 4, short: "คุณภาพงาน", desc: "<strong>คุณภาพงาน</strong> พิจารณาความถูกต้อง สมบูรณ์เรียบร้อย และเชื่อถือได้ของงาน" },
-            { id: 5, short: "ปริมาณงาน", desc: "<strong>ปริมาณงาน</strong> พิจารณาผลงานที่ปฏิบัติสำเร็จลุล่วง มีปริมาณผลงานมาก หรือน้อยกว่าที่กำหนด" },
-            { id: 6, short: "ความรับผิดชอบ", desc: "<strong>ความรับผิดชอบ</strong> พิจารณาความเอาใจใส่ ความตั้งใจ ความรับผิดชอบงานที่ปฏิบิติ โดยผู้บังคับบัญชาสามารถไว้วางใจ ไม่ต้องควบคุมดูแลอย่างใกล้ชิดตลอดเวลา" },
-            { id: 7, short: "การให้ความร่วมมือ", desc: "<strong>การให้ความร่วมมือ</strong> พิจารณาการให้ความช่วยเหลืองาน ผู้บังคับบัญชา เพื่อนร่วมงาน และบุคคลที่เกี่ยวข้อง มีมนุษย์สัมพันธ์ในการติดต่อประสานงาน" },
-            { id: 8, short: "ปฏิบัติตามกฎระเบียบ", desc: "<strong>การปฎิบัติตามกฎระเบียบ</strong> พิจารณาการปฏิบัติตามกฎระเบียบและการอยู่ในวินัย" },
-            { id: 9, short: "เชื่อฟังคำสั่ง", desc: "<strong>การเชื่อฟังคำสั่งผู้บังคับบัญชา</strong> พิจารณาความเต็มใจในการปฏิบัติงาน เมื่อได้รับคำสั่ง และมีความเคารพต่อหัวหน้างาน" },
-            { id: 10, short: "การตรงต่อเวลา", desc: "<strong>การใช้เวลาและการตรงต่อเวลา</strong> พิจารณาความเที่ยงตรงในการรักษาเวลาทำงาน และลาหยุดงาน การใช้เวลาในการทำงานอย่างเต็มที่" },
-            { id: 11, short: "พัฒนาผู้ใต้บังคับบัญชา", desc: "<span class='text-indigo-500 font-medium'>*การพัฒนาผู้ใต้บังคับบัญชา</span> <span class='text-slate-400 text-xs font-light'>(เฉพาะตำแหน่งที่มีผู้ใต้บังคับบัญชาเท่านั้น)</span> พิจารณาผลการพัฒนาผู้ใต้บังคับบัญชา ตามแผนการพัฒนาฯ เช่น การให้คำแนะนำ การสอนงาน/ถ่ายทอดความรู้ หรือการฝึกทักษะที่จำเป็นของงาน" }
-        ];
+        let currentModalRound = 30; // สามารถเป็นตัวเลข หรือ 'chart' ได้
 
         // ฟังก์ชันสุ่มคะแนนจำลอง (1-5)
         function generateMockScores(status) {
@@ -451,6 +451,8 @@
         function renderModalTabs() {
             const tabsContainer = document.getElementById('modal-tabs');
             let tabsHTML = '';
+            
+            // แท็บสำหรับแต่ละรอบประเมิน
             [30, 60, 90, 119].forEach(r => {
                 const isActive = currentModalRound === r;
                 tabsHTML += `
@@ -463,6 +465,20 @@
                     </button>
                 `;
             });
+
+            // แท็บสำหรับดูกราฟเปรียบเทียบ
+            const isChartActive = currentModalRound === 'chart';
+            tabsHTML += `
+                <button onclick="switchTab('chart')" class="px-6 py-3.5 font-medium text-sm transition-all border-b-2 focus:outline-none ml-auto flex items-center gap-2
+                    ${isChartActive 
+                        ? 'border-emerald-500 text-emerald-600 bg-emerald-50/50' 
+                        : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100 hover:border-slate-300'} 
+                    rounded-t-xl">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    กราฟเปรียบเทียบ
+                </button>
+            `;
+
             tabsContainer.innerHTML = tabsHTML;
         }
 
@@ -473,6 +489,21 @@
         }
 
         function renderModalContent(emp) {
+            const tableContainer = document.getElementById('modal-table-container');
+            const chartContainer = document.getElementById('modal-chart-container');
+
+            // กรณีเลือกแท็บ "กราฟเปรียบเทียบ"
+            if (currentModalRound === 'chart') {
+                tableContainer.classList.add('hidden');
+                chartContainer.classList.remove('hidden');
+                renderModalCompareChart(emp);
+                return;
+            }
+
+            // กรณีเลือกแท็บ "รอบ ... วัน"
+            tableContainer.classList.remove('hidden');
+            chartContainer.classList.add('hidden');
+
             const roundData = emp.rounds[currentModalRound];
             const topicsList = document.getElementById('evaluation-topics-list');
             const hasScores = roundData.scores && roundData.scores.length === 11;
@@ -547,6 +578,90 @@
                     <span class="${!isPass ? 'text-rose-700 font-medium' : 'text-slate-600 font-light'}">${failLabel}</span>
                 </div>
             `;
+        }
+
+        // ฟังก์ชันสำหรับวาดกราฟเปรียบเทียบใน Modal
+        function renderModalCompareChart(emp) {
+            const ctx = document.getElementById('modalCompareChart').getContext('2d');
+            if (modalChartInstance) modalChartInstance.destroy();
+
+            const datasets = [];
+            
+            // กำหนดสีให้แต่ละรอบ
+            const roundColors = {
+                30: { bg: 'rgba(99, 102, 241, 0.85)', border: 'rgb(99, 102, 241)' },   // Indigo
+                60: { bg: 'rgba(14, 165, 233, 0.85)', border: 'rgb(14, 165, 233)' },   // Sky
+                90: { bg: 'rgba(16, 185, 129, 0.85)', border: 'rgb(16, 185, 129)' },   // Emerald
+                119: { bg: 'rgba(245, 158, 11, 0.85)', border: 'rgb(245, 158, 11)' }   // Amber
+            };
+
+            // ดึงข้อมูลเฉพาะรอบที่ประเมินแล้ว
+            [30, 60, 90, 119].forEach(r => {
+                const roundData = emp.rounds[r];
+                if (roundData.status.includes('ประเมินแล้ว') && roundData.scores) {
+                    datasets.push({
+                        label: `รอบ ${r} วัน`,
+                        data: roundData.scores,
+                        backgroundColor: roundColors[r].bg,
+                        borderColor: roundColors[r].border,
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8
+                    });
+                }
+            });
+
+            Chart.defaults.font.family = "'Kanit', sans-serif";
+
+            modalChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: evaluationTopics.map(t => t.short), // ใช้ชื่อย่อ 11 หัวข้อ
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { font: { family: "'Kanit'", size: 13 }, color: '#64748b', usePointStyle: true, padding: 20 }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleFont: { family: "'Kanit'", size: 14 },
+                            bodyFont: { family: "'Kanit'", size: 13 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                title: function(context) { return evaluationTopics[context[0].dataIndex].short; }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 5,
+                            grid: { color: '#f1f5f9', drawBorder: false },
+                            ticks: { color: '#94a3b8', font: { family: "'Kanit'" }, stepSize: 1 }
+                        },
+                        x: {
+                            grid: { display: false, drawBorder: false },
+                            ticks: { 
+                                color: '#64748b', 
+                                font: { family: "'Kanit'" },
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index',
+                    },
+                }
+            });
         }
 
         function closeModal() {
