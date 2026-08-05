@@ -153,7 +153,7 @@
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0 duration-300" id="modal-backdrop"></div>
         
         <div class="flex items-center justify-center min-h-screen px-4 py-8 text-center sm:p-0">
-            <div class="relative bg-white rounded-3xl text-left shadow-2xl transform transition-all w-full max-w-5xl flex flex-col max-h-[90vh] overflow-hidden opacity-0 translate-y-4 scale-95 duration-300">
+            <div id="modal-content-box" class="relative bg-white rounded-3xl text-left shadow-2xl transform transition-all w-full max-w-5xl flex flex-col max-h-[90vh] overflow-hidden opacity-0 translate-y-4 scale-95 duration-300">
                 
                 <!-- Modal Header -->
                 <div class="bg-white/80 backdrop-blur-md px-8 py-5 border-b border-slate-100 flex justify-between items-center shrink-0 z-10">
@@ -466,10 +466,14 @@
             renderModalContent(emp);
 
             modal.classList.remove('hidden');
+            
+            const backdrop = document.getElementById('modal-backdrop');
+            const contentBox = document.getElementById('modal-content-box');
+            
             setTimeout(() => {
-                modal.firstElementChild.classList.add('opacity-100'); // backdrop
-                modal.lastElementChild.classList.add('opacity-100', 'translate-y-0', 'scale-100'); // content
-                modal.lastElementChild.classList.remove('translate-y-4', 'scale-95');
+                backdrop.classList.add('opacity-100');
+                contentBox.classList.add('opacity-100', 'translate-y-0', 'scale-100');
+                contentBox.classList.remove('opacity-0', 'translate-y-4', 'scale-95');
             }, 10);
         }
 
@@ -678,11 +682,11 @@
         }
 
         function closeModal() {
-            const modalContent = modal.lastElementChild;
-            const backdrop = modal.firstElementChild;
+            const backdrop = document.getElementById('modal-backdrop');
+            const contentBox = document.getElementById('modal-content-box');
             
-            modalContent.classList.remove('opacity-100', 'translate-y-0', 'scale-100');
-            modalContent.classList.add('opacity-0', 'translate-y-4', 'scale-95');
+            contentBox.classList.remove('opacity-100', 'translate-y-0', 'scale-100');
+            contentBox.classList.add('opacity-0', 'translate-y-4', 'scale-95');
             backdrop.classList.remove('opacity-100');
             
             setTimeout(() => modal.classList.add('hidden'), 300);
