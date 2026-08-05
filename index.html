@@ -1,262 +1,407 @@
-import React, { useState } from 'react';
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard สรุปผลประเมินทดลองงาน</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-const ProbationDashboard = () => {
-  const [selectedFilterRound, setSelectedFilterRound] = useState('all');
-  const [searchEmployee, setSearchEmployee] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+    <!-- Google Fonts: Noto Sans Thai -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  // Mock Data for Summary Cards
-  const summaryData = [
-    { title: 'ทั้งหมด', evaluated: 120, pending: 15 },
-    { title: 'รอบ 30 วัน', evaluated: 30, pending: 5 },
-    { title: 'รอบ 60 วัน', evaluated: 28, pending: 7 },
-    { title: 'รอบ 90 วัน', evaluated: 35, pending: 2 },
-    { title: 'รอบ 119 วัน', evaluated: 27, pending: 1 },
-  ];
-
-  // Mock Data for Employee List
-  const employeeList = [
-    {
-      id: 1,
-      name: 'นาย สมชาย รักดี',
-      status30: 'ประเมินแล้ว',
-      status60: 'ประเมินแล้ว',
-      status90: 'ยังไม่ประเมิน',
-      status119: 'ยังไม่ประเมิน',
-    },
-    {
-      id: 2,
-      name: 'นางสาว สมหญิง จริงใจ',
-      status30: 'ประเมินแล้ว',
-      status60: 'ยังไม่ประเมิน',
-      status90: 'ยังไม่ประเมิน',
-      status119: 'ยังไม่ประเมิน',
-    },
-    {
-      id: 3,
-      name: 'นาย พิชัย กล้าหาญ',
-      status30: 'ประเมินแล้ว',
-      status60: 'ประเมินแล้ว',
-      status90: 'ประเมินแล้ว',
-      status119: 'ประเมินแล้ว',
-    },
-  ];
-
-  const handleOpenModal = (employee) => {
-    setSelectedEmployee(employee);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedEmployee(null);
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <style>
+        body {
+            font-family: 'Noto Sans Thai', sans-serif;
+            background-color: #f8fafc; /* bg-slate-50 */
+        }
         
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Dashboard สรุปผล</h1>
-          <p className="text-gray-500 mt-2">สรุปผลการประเมินการทดลองงานพนักงาน</p>
+        /* Custom Scrollbar for table overflow */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased p-4 md:p-8 min-h-screen">
+
+    <div class="max-w-7xl mx-auto space-y-8">
+        
+        <!-- Header -->
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Dashboard สรุปผล</h1>
+            <p class="text-gray-500 mt-2">สรุปผลการประเมินการปฏิบัติงานระยะทดลองงาน</p>
         </div>
 
-        {/* Summary Cards Section */}
-        {}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {summaryData.map((card, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-sm p-5 border border-gray-100 flex flex-col items-center justify-center hover:shadow-md transition-shadow">
-              <h3 className="text-lg font-semibold text-gray-700 mb-3">{card.title}</h3>
-              <div className="w-full space-y-2 text-sm">
-                <div className="flex justify-between items-center text-blue-600 bg-blue-50 px-3 py-1.5 rounded-md">
-                  <span>ประเมินแล้ว</span>
-                  <span className="font-bold">{card.evaluated} คน</span>
+        <!-- Summary Cards Section -->
+        <div id="summary-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <!-- Cards will be injected here by JavaScript -->
+        </div>
+
+        <!-- Filters Section -->
+        <div class="flex flex-col sm:flex-row gap-4 items-center justify-start py-2">
+            <div class="relative w-full sm:w-64">
+                <select id="filter-round" class="w-full appearance-none bg-gray-100 border border-gray-200 hover:border-gray-300 px-4 py-2.5 pr-8 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition-colors">
+                    <option value="all">ตัวกรอง : รอบประเมิน (ทั้งหมด)</option>
+                    <option value="30">รอบ 30 วัน</option>
+                    <option value="60">รอบ 60 วัน</option>
+                    <option value="90">รอบ 90 วัน</option>
+                    <option value="119">รอบ 119 วัน</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                 </div>
-                <div className="flex justify-between items-center text-amber-600 bg-amber-50 px-3 py-1.5 rounded-md">
-                  <span>รอประเมิน</span>
-                  <span className="font-bold">{card.pending} คน</span>
+            </div>
+            
+            <div class="relative w-full sm:w-64">
+                <input type="text" id="filter-employee" placeholder="ตัวกรอง : ค้นหาพนักงาน" class="w-full bg-gray-100 border border-gray-200 hover:border-gray-300 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition-colors">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
-              </div>
             </div>
-          ))}
         </div>
 
-        {/* Filters Section */}
-        {}
-        <div className="flex flex-col sm:flex-row gap-4 py-2">
-          <div className="relative w-full sm:w-64">
-             <select 
-                className="w-full appearance-none bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700"
-                value={selectedFilterRound}
-                onChange={(e) => setSelectedFilterRound(e.target.value)}
-              >
-                <option value="all">ตัวกรอง : ทุกรอบประเมิน</option>
-                <option value="30">รอบ 30 วัน</option>
-                <option value="60">รอบ 60 วัน</option>
-                <option value="90">รอบ 90 วัน</option>
-                <option value="119">รอบ 119 วัน</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-              </div>
-          </div>
-          
-          <div className="relative w-full sm:w-64">
-            <input 
-              type="text" 
-              placeholder="ตัวกรอง : ค้นหาชื่อพนักงาน" 
-              className="w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700"
-              value={searchEmployee}
-              onChange={(e) => setSearchEmployee(e.target.value)}
-            />
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg className="w-4 h-4 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-                </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Chart Section Placeholder */}
-        {}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">กราฟแท่ง สรุปผล</h2>
-          <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg p-8 flex flex-col items-center justify-center h-64 text-gray-500 space-y-2">
-            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-            <p className="font-medium">พื้นที่สำหรับแสดงกราฟ (Chart.js / Recharts)</p>
-            <ul className="list-disc text-sm text-left pl-5 mt-2 space-y-1">
-              <li>เปรียบเทียบแต่ละหัวข้อการประเมิน</li>
-              <li>เปรียบเทียบแต่ละรอบการประเมิน</li>
-              <li>เปรียบเทียบผลรวม % แต่ละรอบการประเมิน</li>
+        <!-- Chart Section -->
+        <div class="bg-gray-100/70 rounded-2xl p-6 border border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800 mb-2">กราฟแท่ง</h2>
+            <ul class="text-sm text-gray-600 mb-6 space-y-1 list-disc list-inside ml-2">
+                <li>เปรียบเทียบแต่ละหัวข้อการประเมิน</li>
+                <li>เปรียบเทียบแต่ละรอบการประเมิน</li>
+                <li>เปรียบเทียบผลรวม % แต่ละรอบการประเมิน</li>
             </ul>
-          </div>
-        </div>
-
-        {/* Employee List Table */}
-        {}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-800">แสดงตารางรายการพนักงานที่อยู่ระหว่างทดลองงานทั้งหมด</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left text-gray-500">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-100/50">
-                <tr>
-                  <th scope="col" className="px-6 py-4 font-semibold">ชื่อพนักงาน</th>
-                  <th scope="col" className="px-6 py-4 font-semibold text-center">รอบ 30 วัน</th>
-                  <th scope="col" className="px-6 py-4 font-semibold text-center">รอบ 60 วัน</th>
-                  <th scope="col" className="px-6 py-4 font-semibold text-center">รอบ 90 วัน</th>
-                  <th scope="col" className="px-6 py-4 font-semibold text-center">รอบ 119 วัน</th>
-                  <th scope="col" className="px-6 py-4 font-semibold text-center">จัดการ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {employeeList.map((emp) => (
-                  <tr key={emp.id} className="bg-white border-b hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                      {emp.name}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className={`text-center px-3 py-1.5 rounded-full text-xs font-medium ${emp.status30 === 'ประเมินแล้ว' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {emp.status30}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                       <div className={`text-center px-3 py-1.5 rounded-full text-xs font-medium ${emp.status60 === 'ประเมินแล้ว' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {emp.status60}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                       <div className={`text-center px-3 py-1.5 rounded-full text-xs font-medium ${emp.status90 === 'ประเมินแล้ว' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {emp.status90}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                       <div className={`text-center px-3 py-1.5 rounded-full text-xs font-medium ${emp.status119 === 'ประเมินแล้ว' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {emp.status119}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button 
-                        onClick={() => handleOpenModal(emp)}
-                        className="inline-flex items-center justify-center p-2 text-blue-600 rounded-lg hover:bg-blue-50 focus:ring-4 focus:ring-blue-300 transition-all"
-                        title="ดู/แก้ไขข้อมูล"
-                      >
-                         <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
-                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Modal (Popup) Placeholder */}
-        {}
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center w-full h-full bg-black/50 backdrop-blur-sm">
-            <div className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden m-4">
-              
-              {/* Modal Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">
-                <h3 className="text-xl font-semibold text-gray-800">
-                  รายละเอียดการประเมิน: {selectedEmployee?.name}
-                </h3>
-                <button 
-                  onClick={handleCloseModal}
-                  className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>
-                </button>
-              </div>
-              
-              {/* Modal Body */}
-              <div className="p-6 space-y-6">
-                <p className="text-gray-500 text-sm">
-                  * นี่คือ Popup จำลอง สำหรับเปิดแบบฟอร์มประเมินหรือรายละเอียดของพนักงาน {selectedEmployee?.name} 
-                  ตามที่ระบุใน Requirement ว่าให้ "แสดงป๊อปอัพขึ้นมา" เมื่อคลิกปุ่มจัดการ
-                </p>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 border rounded-lg bg-gray-50">
-                    <span className="block text-xs font-semibold text-gray-500 mb-1">สถานะ 30 วัน</span>
-                    <span className={`inline-flex px-2 py-1 rounded text-sm font-medium ${selectedEmployee?.status30 === 'ประเมินแล้ว' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedEmployee?.status30}</span>
-                  </div>
-                   <div className="p-4 border rounded-lg bg-gray-50">
-                    <span className="block text-xs font-semibold text-gray-500 mb-1">สถานะ 60 วัน</span>
-                    <span className={`inline-flex px-2 py-1 rounded text-sm font-medium ${selectedEmployee?.status60 === 'ประเมินแล้ว' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedEmployee?.status60}</span>
-                  </div>
-                  {/* ... Add more details as needed */}
-                </div>
-              </div>
-              
-              {/* Modal Footer */}
-              <div className="flex items-center justify-end p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl gap-3">
-                <button 
-                  onClick={handleCloseModal}
-                  className="text-gray-600 bg-white border border-gray-300 hover:bg-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none focus:ring-4 focus:ring-gray-200 transition-colors"
-                >
-                  ปิดหน้าต่าง
-                </button>
-                 <button 
-                  onClick={handleCloseModal}
-                  className="text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-colors shadow-sm"
-                >
-                  บันทึกข้อมูล / ดำเนินการต่อ
-                </button>
-              </div>
-
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 h-80 relative w-full">
+                <canvas id="evaluationChart"></canvas>
             </div>
-          </div>
-        )}
+        </div>
 
-      </div>
+        <!-- Employee List Table -->
+        <div class="bg-gray-100/70 rounded-2xl p-6 border border-gray-200">
+            <h2 class="text-lg font-bold text-gray-800 mb-6">แสดงตารางรายการพนักงานที่อยู่ระหว่างทดลองงานทั้งหมด</h2>
+            
+            <div class="overflow-x-auto custom-scrollbar pb-4">
+                <div class="min-w-[900px] flex flex-col space-y-3" id="employee-list-container">
+                    <!-- Table Header -->
+                    <div class="grid grid-cols-6 gap-4 px-4 text-sm font-semibold text-gray-500 text-center">
+                        <div class="text-left">ชื่อพนักงาน</div>
+                        <div>รอบ 30 วัน</div>
+                        <div>รอบ 60 วัน</div>
+                        <div>รอบ 90 วัน</div>
+                        <div>รอบ 119 วัน</div>
+                        <div>จัดการ</div>
+                    </div>
+                    
+                    <!-- Rows will be injected here by JavaScript -->
+                </div>
+            </div>
+        </div>
     </div>
-  );
-};
 
-export default ProbationDashboard;
+    <!-- Modal (Popup) -->
+    <div id="employee-modal" class="fixed inset-0 z-50 hidden">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" id="modal-backdrop"></div>
+        
+        <!-- Modal Content -->
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div class="relative bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-2xl w-full border border-gray-100">
+                
+                <!-- Modal Header -->
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <h3 class="text-lg leading-6 font-bold text-gray-900" id="modal-title">
+                        รายละเอียดการประเมิน
+                    </h3>
+                    <button id="close-modal-btn-icon" class="text-gray-400 hover:text-gray-500 focus:outline-none bg-gray-200 hover:bg-gray-300 rounded-full p-1 transition-colors">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Modal Body -->
+                <div class="px-6 py-6">
+                    <div class="mb-4 bg-yellow-50 text-yellow-800 p-4 rounded-lg text-sm border border-yellow-200 flex items-start">
+                        <svg class="w-5 h-5 mr-2 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p>นี่คือ Popup จำลองที่สร้างขึ้นตาม Requirement เพื่อเปิดแบบฟอร์มประเมิน หรือดูรายละเอียดของ <strong id="modal-emp-name" class="font-bold text-yellow-900"></strong></p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mt-4" id="modal-status-grid">
+                        <!-- Statuses injected here -->
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end gap-3 rounded-b-2xl">
+                    <button id="close-modal-btn" type="button" class="inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        ยกเลิก
+                    </button>
+                    <button type="button" class="inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        บันทึกการประเมิน
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Mock Data ---
+        const summaryData = [
+            { id: 'all', title: 'ทั้งหมด', evaluated: 120, pending: 15 },
+            { id: '30', title: 'รอบ 30 วัน', evaluated: 30, pending: 5 },
+            { id: '60', title: 'รอบ 60 วัน', evaluated: 28, pending: 7 },
+            { id: '90', title: 'รอบ 90 วัน', evaluated: 35, pending: 2 },
+            { id: '119', title: 'รอบ 119 วัน', evaluated: 27, pending: 1 },
+        ];
+
+        const employeeList = [
+            { id: 1, name: 'นาย A (สมชาย รักดี)', status30: 'ประเมินแล้ว', status60: 'ประเมินแล้ว', status90: 'ยังไม่ประเมิน', status119: 'ยังไม่ประเมิน' },
+            { id: 2, name: 'นาย B (พิชัย กล้าหาญ)', status30: 'ประเมินแล้ว', status60: 'ยังไม่ประเมิน', status90: 'ยังไม่ประเมิน', status119: 'ยังไม่ประเมิน' },
+            { id: 3, name: 'นางสาว C (สมหญิง จริงใจ)', status30: 'ประเมินแล้ว', status60: 'ประเมินแล้ว', status90: 'ประเมินแล้ว', status119: 'ประเมินแล้ว' },
+            { id: 4, name: 'นาย D (มานะ อดทน)', status30: 'ยังไม่ประเมิน', status60: 'ยังไม่ประเมิน', status90: 'ยังไม่ประเมิน', status119: 'ยังไม่ประเมิน' },
+        ];
+
+        // --- DOM Elements ---
+        const summaryContainer = document.getElementById('summary-cards-container');
+        const employeeContainer = document.getElementById('employee-list-container');
+        const filterRound = document.getElementById('filter-round');
+        const filterEmployee = document.getElementById('filter-employee');
+        
+        const modal = document.getElementById('employee-modal');
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const closeModalBtnIcon = document.getElementById('close-modal-btn-icon');
+
+        // --- Render Functions ---
+        function renderSummaryCards() {
+            summaryContainer.innerHTML = '';
+            summaryData.forEach(card => {
+                const cardHTML = `
+                    <div class="bg-white rounded-xl p-4 flex flex-col items-center justify-center border border-gray-200 shadow-sm">
+                        <h3 class="text-base font-bold text-gray-800 mb-3">${card.title}</h3>
+                        <div class="w-full text-sm space-y-1">
+                            <p class="text-blue-600 flex justify-between w-full px-2">
+                                <span>- ประเมินแล้ว</span>
+                                <span class="font-bold">${card.evaluated} คน</span>
+                            </p>
+                            <p class="text-blue-600 flex justify-between w-full px-2">
+                                <span>- รอประเมิน</span>
+                                <span class="font-bold">${card.pending} คน</span>
+                            </p>
+                        </div>
+                    </div>
+                `;
+                summaryContainer.innerHTML += cardHTML;
+            });
+        }
+
+        function getStatusColorClass(status) {
+            if (status === 'ประเมินแล้ว') return 'text-green-600';
+            return 'text-gray-500'; // ยังไม่ประเมิน
+        }
+
+        function renderEmployeeList(employees) {
+            // Keep header, remove old rows
+            const headerHTML = `
+                <div class="grid grid-cols-6 gap-4 px-4 text-sm font-semibold text-gray-500 text-center mb-2">
+                    <div class="text-left">ชื่อพนักงาน</div>
+                    <div>รอบ 30 วัน</div>
+                    <div>รอบ 60 วัน</div>
+                    <div>รอบ 90 วัน</div>
+                    <div>รอบ 119 วัน</div>
+                    <div>จัดการ</div>
+                </div>
+            `;
+            
+            if (employees.length === 0) {
+                employeeContainer.innerHTML = headerHTML + `<div class="text-center py-8 text-gray-500 bg-white rounded-xl border border-gray-200">ไม่พบข้อมูลพนักงานที่ค้นหา</div>`;
+                return;
+            }
+
+            let rowsHTML = headerHTML;
+            
+            employees.forEach(emp => {
+                rowsHTML += `
+                    <div class="grid grid-cols-6 gap-3 items-center text-sm">
+                        <!-- Name Box (Style mimicking the wireframe image) -->
+                        <div class="bg-amber-100/70 border border-amber-200 rounded-lg py-3 px-4 text-center font-medium text-amber-900 shadow-sm truncate">
+                            ${emp.name}
+                        </div>
+                        
+                        <!-- Status 30 -->
+                        <div class="bg-amber-50/50 border border-amber-200/60 rounded-lg py-2 px-2 text-center shadow-sm flex flex-col justify-center h-full">
+                            <span class="font-semibold text-gray-700 text-xs mb-0.5">รอบ 30 วัน</span>
+                            <span class="text-xs ${getStatusColorClass(emp.status30)}">${emp.status30}</span>
+                        </div>
+
+                        <!-- Status 60 -->
+                         <div class="bg-amber-50/50 border border-amber-200/60 rounded-lg py-2 px-2 text-center shadow-sm flex flex-col justify-center h-full">
+                            <span class="font-semibold text-gray-700 text-xs mb-0.5">รอบ 60 วัน</span>
+                            <span class="text-xs ${getStatusColorClass(emp.status60)}">${emp.status60}</span>
+                        </div>
+
+                        <!-- Status 90 -->
+                         <div class="bg-amber-50/50 border border-amber-200/60 rounded-lg py-2 px-2 text-center shadow-sm flex flex-col justify-center h-full">
+                            <span class="font-semibold text-gray-700 text-xs mb-0.5">รอบ 90 วัน</span>
+                            <span class="text-xs ${getStatusColorClass(emp.status90)}">${emp.status90}</span>
+                        </div>
+
+                        <!-- Status 119 -->
+                         <div class="bg-amber-50/50 border border-amber-200/60 rounded-lg py-2 px-2 text-center shadow-sm flex flex-col justify-center h-full">
+                            <span class="font-semibold text-gray-700 text-xs mb-0.5">รอบ 119 วัน</span>
+                            <span class="text-xs ${getStatusColorClass(emp.status119)}">${emp.status119}</span>
+                        </div>
+
+                        <!-- Action Button -->
+                        <div class="flex justify-center items-center h-full">
+                            <button onclick="openModal(${emp.id})" class="bg-gray-100 border-2 border-red-400 hover:bg-red-50 text-gray-600 p-2 rounded-lg shadow-sm transition-colors flex items-center gap-1 group relative">
+                                <!-- Tooltip hint (like the red text in wireframe) -->
+                                <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-red-500 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                    **แสดงป๊อปอัพ
+                                </span>
+                                <!-- Search & Edit Icons side-by-side -->
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#3b82f6" class="w-5 h-5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#d97706" class="w-5 h-5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            employeeContainer.innerHTML = rowsHTML;
+        }
+
+        function filterData() {
+            const searchTerm = filterEmployee.value.toLowerCase();
+            const roundFilter = filterRound.value;
+            
+            const filteredEmployees = employeeList.filter(emp => {
+                const matchName = emp.name.toLowerCase().includes(searchTerm);
+                
+                // If round filter is specific, we might want to only show people relevant to that round, 
+                // but usually the table shows everyone and we just filter by name. 
+                // For this demo, let's just filter by name to keep the table layout intact.
+                // If you want to filter out rows based on round, you can add logic here.
+                return matchName;
+            });
+            
+            renderEmployeeList(filteredEmployees);
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('evaluationChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['รอบ 30 วัน', 'รอบ 60 วัน', 'รอบ 90 วัน', 'รอบ 119 วัน'],
+                    datasets: [
+                        {
+                            label: 'คะแนนเฉลี่ยรวม (%)',
+                            data: [75, 82, 88, 91],
+                            backgroundColor: 'rgba(59, 130, 246, 0.8)', // blue-500
+                            borderColor: 'rgba(37, 99, 235, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                        },
+                        {
+                            label: 'เป้าหมายที่คาดหวัง (%)',
+                            data: [70, 75, 80, 85],
+                            backgroundColor: 'rgba(209, 213, 219, 0.6)', // gray-300
+                            borderColor: 'rgba(156, 163, 175, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        function openModal(employeeId) {
+            const emp = employeeList.find(e => e.id === employeeId);
+            if (!emp) return;
+
+            document.getElementById('modal-emp-name').innerText = emp.name;
+            
+            // Populate status grid in modal
+            const gridHTML = `
+                <div class="bg-gray-50 p-3 rounded border border-gray-200">
+                    <p class="text-xs text-gray-500 mb-1">รอบ 30 วัน</p>
+                    <p class="font-medium ${getStatusColorClass(emp.status30)}">${emp.status30}</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded border border-gray-200">
+                    <p class="text-xs text-gray-500 mb-1">รอบ 60 วัน</p>
+                    <p class="font-medium ${getStatusColorClass(emp.status60)}">${emp.status60}</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded border border-gray-200">
+                    <p class="text-xs text-gray-500 mb-1">รอบ 90 วัน</p>
+                    <p class="font-medium ${getStatusColorClass(emp.status90)}">${emp.status90}</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded border border-gray-200">
+                    <p class="text-xs text-gray-500 mb-1">รอบ 119 วัน</p>
+                    <p class="font-medium ${getStatusColorClass(emp.status119)}">${emp.status119}</p>
+                </div>
+            `;
+            document.getElementById('modal-status-grid').innerHTML = gridHTML;
+
+            // Show Modal
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            modal.classList.remove('opacity-100');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200); // Wait for transition
+        }
+
+        // --- Event Listeners ---
+        filterEmployee.addEventListener('input', filterData);
+        filterRound.addEventListener('change', filterData);
+        closeModalBtn.addEventListener('click', closeModal);
+        closeModalBtnIcon.addEventListener('click', closeModal);
+        modalBackdrop.addEventListener('click', closeModal);
+
+        // --- Init ---
+        window.onload = () => {
+            renderSummaryCards();
+            renderEmployeeList(employeeList);
+            initChart();
+        };
+
+    </script>
+</body>
+</html>
