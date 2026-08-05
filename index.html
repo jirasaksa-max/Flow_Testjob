@@ -99,14 +99,42 @@
             </div>
         </div>
 
-        <!-- Chart Section -->
+        <!-- Chart Section (4 Pie Charts) -->
         <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 transition-all hover:shadow-md">
             <div class="mb-6">
-                <h2 class="text-xl font-semibold text-slate-800">กราฟเปรียบเทียบคะแนนเฉลี่ยแต่ละหัวข้อการประเมิน</h2>
-                <p class="text-sm text-slate-500 font-light">แสดงคะแนนเฉลี่ย (เต็ม 5) ของทั้ง 11 หัวข้อ จากทุกรอบการประเมินที่มีข้อมูล</p>
+                <h2 class="text-xl font-semibold text-slate-800">สัดส่วนสถานะการประเมินแต่ละรอบ</h2>
+                <p class="text-sm text-slate-500 font-light">แสดงสัดส่วนพนักงานที่ได้รับการประเมินแล้วและที่ยังรอประเมิน</p>
             </div>
-            <div class="h-[400px] relative w-full">
-                <canvas id="evaluationChart"></canvas>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- 30 Days -->
+                <div class="flex flex-col items-center">
+                    <h3 class="text-slate-700 font-medium mb-4 bg-slate-50 px-4 py-1.5 rounded-full text-sm border border-slate-100">รอบ 30 วัน</h3>
+                    <div class="w-full h-48 relative">
+                        <canvas id="pieChart-30"></canvas>
+                    </div>
+                </div>
+                <!-- 60 Days -->
+                <div class="flex flex-col items-center">
+                    <h3 class="text-slate-700 font-medium mb-4 bg-slate-50 px-4 py-1.5 rounded-full text-sm border border-slate-100">รอบ 60 วัน</h3>
+                    <div class="w-full h-48 relative">
+                        <canvas id="pieChart-60"></canvas>
+                    </div>
+                </div>
+                <!-- 90 Days -->
+                <div class="flex flex-col items-center">
+                    <h3 class="text-slate-700 font-medium mb-4 bg-slate-50 px-4 py-1.5 rounded-full text-sm border border-slate-100">รอบ 90 วัน</h3>
+                    <div class="w-full h-48 relative">
+                        <canvas id="pieChart-90"></canvas>
+                    </div>
+                </div>
+                <!-- 119 Days -->
+                <div class="flex flex-col items-center">
+                    <h3 class="text-slate-700 font-medium mb-4 bg-slate-50 px-4 py-1.5 rounded-full text-sm border border-slate-100">รอบ 119 วัน</h3>
+                    <div class="w-full h-48 relative">
+                        <canvas id="pieChart-119"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -124,10 +152,10 @@
 
     <!-- Modal (Popup) -->
     <div id="employee-modal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" id="modal-backdrop"></div>
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0 duration-300" id="modal-backdrop"></div>
         
         <div class="flex items-center justify-center min-h-screen px-4 py-8 text-center sm:p-0">
-            <div class="relative bg-white rounded-3xl text-left shadow-2xl transform transition-all w-full max-w-5xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div class="relative bg-white rounded-3xl text-left shadow-2xl transform transition-all w-full max-w-5xl flex flex-col max-h-[90vh] overflow-hidden opacity-0 translate-y-4 scale-95 duration-300">
                 
                 <!-- Modal Header -->
                 <div class="bg-white/80 backdrop-blur-md px-8 py-5 border-b border-slate-100 flex justify-between items-center shrink-0 z-10">
@@ -190,7 +218,7 @@
                     <div id="modal-chart-container" class="hidden bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
                         <div class="mb-4">
                             <h4 class="text-lg font-medium text-slate-700">เปรียบเทียบคะแนนแต่ละหัวข้อ (ทุกรอบการประเมิน)</h4>
-                            <p class="text-sm text-slate-500 font-light">แสดงเฉพาะรอบที่ได้รับการประเมินแล้ว</p>
+                            <p class="text-sm text-slate-500 font-light">แสดงเฉพาะรอบที่ได้รับการประเมินแล้ว เพื่อดูพัฒนาการ</p>
                         </div>
                         <div class="h-[450px] relative w-full">
                             <canvas id="modalCompareChart"></canvas>
@@ -206,13 +234,28 @@
         // --- State Data ---
         let summaryData = [];
         let employeeList = [];
-        let chartInstance = null;
-        let modalChartInstance = null; // เพิ่มตัวแปรสำหรับกราฟใน Modal
+        let pieChartInstances = { 30: null, 60: null, 90: null, 119: null }; // เก็บ Instance กราฟพาย 4 อัน
+        let modalChartInstance = null; // กราฟใน Modal
         
         let currentModalEmpId = null;
         let currentModalRound = 30; // สามารถเป็นตัวเลข หรือ 'chart' ได้
 
-        // ฟังก์ชันสุ่มคะแนนจำลอง (1-5)
+        // **แก้ไข: เพิ่มตัวแปร evaluationTopics ที่ขาดหายไป**
+        const evaluationTopics = [
+            { short: 'ความรู้เฉพาะหน้าที่', desc: 'ความรู้เฉพาะหน้าที่ พิจารณาความเข้าใจในหน้าที่ วิธีปฎิบัติงาน ความรอบรู้ และสันทัดในงาน' },
+            { short: 'การเรียนรู้งาน', desc: 'การเรียนรู้งาน พิจารณาความสนใจในการเรียนรู้ รู้ขอบเขตของงานที่ต้องปฏิบัติ เรียนรู้งานได้รวดเร็ว สามารถปฎิบัติงานได้' },
+            { short: 'ความขยันฯ', desc: 'ความขยันและเอาใจใส่งาน พิจารณาเป็นผู้ทำงานคล่องแคล่ว ความรวดเร็วในการปฎิบัติงาน ตวามกระตือรือร้น ในการทำงาน' },
+            { short: 'คุณภาพงาน', desc: 'คุณภาพงาน พิจารณาความถูกต้อง สมบูรณ์เรียบร้อย และเชื่อถือได้ของงาน' },
+            { short: 'ปริมาณงาน', desc: 'ปริมาณงาน พิจารณาผลงานที่ปฏิบัติสำเร็จลุล่วง มีปริมาณผลงานมาก หรือน้อยกว่าที่กำหนด' },
+            { short: 'ความรับผิดชอบ', desc: 'ความรับผิดชอบ พิจารณาความเอาใจใส่ ความตั้งใจ ความรับผิดชอบงานที่ปฏิบิติ โดยผู้บังคับบัญชาสามารถไว้วางใจ ไม่ต้องควบคุมดูแลอย่างใกล้ชิดตลอดเวลา' },
+            { short: 'การให้ความร่วมมือ', desc: 'การให้ความร่วมมือ พิจารณาการให้ความช่วยเหลืองาน ผู้บังคับบัญชา เพื่อนร่วมงาน และบุคคลที่เกี่ยวข้อง มีมนุษย์สัมพันธ์ในการติดต่อประสานงาน' },
+            { short: 'การปฎิบัติตามกฎระเบียบ', desc: 'การปฎิบัติตามกฎระเบียบ พิจารณาการปฏิบัติตามกฎระเบียบและการอยู่ในวินัย' },
+            { short: 'การเชื่อฟังคำสั่งฯ', desc: 'การเชื่อฟังคำสั่งผู้บังคับบัญชา พิจารณาความเต็มใจในการปฏิบัติงาน เมื่อได้รับคำสั่ง และมีความเคารพต่อหัวหน้างาน' },
+            { short: 'การใช้เวลาฯ', desc: 'การใช้เวลาและการตรงต่อเวลา พิจารณาความเที่ยงตรงในการรักษาเวลาทำงาน และลาหยุดงาน การใช้เวลาในการทำงานอย่างเต็มที่' },
+            { short: 'การพัฒนาผู้ใต้บังคับบัญชา', desc: 'การพัฒนาผู้ใต้บังคับบัญชา (ประเมินเฉพาะตำแหน่งที่มีผู้ใต้บังคับบัญชาเท่านั้น) พิจารณาผลการพัฒนาผู้ใต้บังคับบัญชา ตามแผนการพัฒนาฯ เช่น การให้คำแนะนำ การสอนงาน/ถ่ายทอดความรู้ หรือการฝึกทักษะที่จำเป็นของงาน' }
+        ];
+
+        // ฟังก์ชันสุ่มคะแนนจำลอง (1-5) กรณีไม่มีคะแนนในไฟล์ CSV
         function generateMockScores(status) {
             if (!status || !status.includes('ประเมินแล้ว')) return null;
             let scores = [];
@@ -237,7 +280,6 @@
             summaryContainer.innerHTML = '';
             summaryData.forEach((card, index) => {
                 const isAll = card.id === 'all';
-                // Delay animation based on index
                 const delay = index * 100;
                 
                 summaryContainer.innerHTML += `
@@ -322,82 +364,67 @@
             employeeContainer.innerHTML = rowsHTML;
         }
 
-        function initTopicComparisonChart() {
-            const ctx = document.getElementById('evaluationChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
-
-            // คำนวณคะแนนเฉลี่ยแต่ละหัวข้อ
-            let topicSums = Array(11).fill(0);
-            let topicCounts = Array(11).fill(0);
-
-            employeeList.forEach(emp => {
-                [30, 60, 90, 119].forEach(r => {
-                    const scores = emp.rounds[r].scores;
-                    if (scores && scores.length === 11) {
-                        scores.forEach((score, index) => {
-                            topicSums[index] += score;
-                            topicCounts[index]++;
-                        });
-                    }
-                });
-            });
-
-            const avgData = topicSums.map((sum, index) => {
-                return topicCounts[index] > 0 ? (sum / topicCounts[index]).toFixed(2) : 0;
-            });
-
-            // Gradient for bars
-            let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.9)'); // Indigo 500
-            gradient.addColorStop(1, 'rgba(99, 102, 241, 0.3)');
-
+        // วาดกราฟพาย (โดนัท) 4 วง แทนกราฟแท่งใหญ่
+        function initPieCharts(counts) {
+            const rounds = [30, 60, 90, 119];
             Chart.defaults.font.family = "'Kanit', sans-serif";
 
-            chartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: evaluationTopics.map(t => t.short),
-                    datasets: [{
-                        label: 'คะแนนเฉลี่ย (เต็ม 5)',
-                        data: avgData,
-                        backgroundColor: gradient,
-                        borderRadius: 6,
-                        borderSkipped: false,
-                        barPercentage: 0.6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { 
-                            position: 'top',
-                            labels: { font: { family: "'Kanit'", size: 13 }, color: '#64748b' }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                            titleFont: { family: "'Kanit'", size: 14 },
-                            bodyFont: { family: "'Kanit'", size: 13 },
-                            padding: 12,
-                            cornerRadius: 8,
-                            callbacks: {
-                                title: function(context) { return evaluationTopics[context[0].dataIndex].short; }
+            rounds.forEach(r => {
+                const ctx = document.getElementById(`pieChart-${r}`).getContext('2d');
+                
+                // เคลียร์กราฟเก่าถ้ามี
+                if (pieChartInstances[r]) {
+                    pieChartInstances[r].destroy();
+                }
+
+                const evalCount = counts[r].evaluated;
+                const pendCount = counts[r].pending;
+                const hasData = evalCount > 0 || pendCount > 0;
+                
+                // ถ้าไม่มีข้อมูลเลย ให้แสดงวงกลมสีเทา
+                const dataValues = hasData ? [evalCount, pendCount] : [1];
+                const bgColors = hasData 
+                    ? ['rgba(16, 185, 129, 0.85)', 'rgba(245, 158, 11, 0.85)'] // เขียว, ส้ม
+                    : ['#f1f5f9']; // เทา
+                const labels = hasData ? ['ประเมินแล้ว', 'รอประเมิน'] : ['ไม่มีข้อมูล'];
+
+                pieChartInstances[r] = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: dataValues,
+                            backgroundColor: bgColors,
+                            borderWidth: 0,
+                            hoverOffset: hasData ? 5 : 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%', // ขนาดรูกลาง
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom',
+                                labels: { 
+                                    font: { family: "'Kanit'", size: 12 }, 
+                                    color: '#64748b', 
+                                    usePointStyle: true,
+                                    padding: 15
+                                }
+                            },
+                            tooltip: {
+                                enabled: hasData,
+                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                titleFont: { family: "'Kanit'", size: 13 },
+                                bodyFont: { family: "'Kanit'", size: 13 },
+                                padding: 10,
+                                cornerRadius: 8
                             }
                         }
-                    },
-                    scales: {
-                        y: { 
-                            beginAtZero: true, 
-                            max: 5,
-                            grid: { color: '#f1f5f9', drawBorder: false },
-                            ticks: { color: '#94a3b8', font: { family: "'Kanit'" } }
-                        },
-                        x: {
-                            grid: { display: false, drawBorder: false },
-                            ticks: { color: '#64748b', font: { family: "'Kanit'" } }
-                        }
                     }
-                }
+                });
             });
         }
 
@@ -410,7 +437,6 @@
                 let matchRound = true;
                 
                 if (roundFilter !== 'all') {
-                    // กรองเฉพาะคนที่มีการประเมินในรอบนั้นๆ
                     matchRound = emp.rounds[roundFilter].status.includes('ประเมินแล้ว');
                 }
                 return matchName && matchRound;
@@ -428,7 +454,6 @@
 
             document.getElementById('modal-emp-name').innerText = emp.name;
             
-            // หา Tab แรกที่ประเมินแล้ว หรือเอา 30 วันเป็นตั้งต้น
             currentModalRound = 30;
             const rounds = [30, 60, 90, 119];
             for (let r of rounds) {
@@ -445,6 +470,7 @@
             setTimeout(() => {
                 modal.firstElementChild.classList.add('opacity-100'); // backdrop
                 modal.lastElementChild.classList.add('opacity-100', 'translate-y-0', 'scale-100'); // content
+                modal.lastElementChild.classList.remove('translate-y-4', 'scale-95');
             }, 10);
         }
 
@@ -452,7 +478,6 @@
             const tabsContainer = document.getElementById('modal-tabs');
             let tabsHTML = '';
             
-            // แท็บสำหรับแต่ละรอบประเมิน
             [30, 60, 90, 119].forEach(r => {
                 const isActive = currentModalRound === r;
                 tabsHTML += `
@@ -466,14 +491,13 @@
                 `;
             });
 
-            // แท็บสำหรับดูกราฟเปรียบเทียบ
             const isChartActive = currentModalRound === 'chart';
             tabsHTML += `
                 <button onclick="switchTab('chart')" class="px-6 py-3.5 font-medium text-sm transition-all border-b-2 focus:outline-none ml-auto flex items-center gap-2
                     ${isChartActive 
                         ? 'border-emerald-500 text-emerald-600 bg-emerald-50/50' 
                         : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100 hover:border-slate-300'} 
-                    rounded-t-xl">
+                        rounded-t-xl">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     กราฟเปรียบเทียบ
                 </button>
@@ -492,7 +516,6 @@
             const tableContainer = document.getElementById('modal-table-container');
             const chartContainer = document.getElementById('modal-chart-container');
 
-            // กรณีเลือกแท็บ "กราฟเปรียบเทียบ"
             if (currentModalRound === 'chart') {
                 tableContainer.classList.add('hidden');
                 chartContainer.classList.remove('hidden');
@@ -500,7 +523,6 @@
                 return;
             }
 
-            // กรณีเลือกแท็บ "รอบ ... วัน"
             tableContainer.classList.remove('hidden');
             chartContainer.classList.add('hidden');
 
@@ -515,7 +537,6 @@
                 const score = hasScores ? roundData.scores[index] : null;
                 if(score) totalScore += score;
                 
-                // Styling scores
                 let scoreBox = `<div class="w-12 h-10 mx-auto flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400 text-sm">-</div>`;
                 if (score) {
                     let colorClass = 'bg-slate-100 text-slate-700 border-slate-200';
@@ -537,7 +558,6 @@
                 `;
             });
 
-            // Summary Section
             const percentElement = document.getElementById('summary-percentage');
             const checkboxesElement = document.getElementById('summary-checkboxes');
             
@@ -547,11 +567,9 @@
                 return;
             }
 
-            // คำนวณเปอร์เซ็นต์ (คะแนนเต็ม 55)
             const percentage = ((totalScore / 55) * 100).toFixed(1);
             percentElement.innerText = `${percentage}%`;
 
-            // เงื่อนไขผ่านโปร
             let isPass = false;
             let passLabel = '';
             let failLabel = 'ไม่ผ่านการทดลองงาน';
@@ -567,7 +585,6 @@
                 passLabel = 'ผ่านการทดลองงาน (70% ขึ้นไป)';
             }
 
-            // Render Modern Checkboxes
             checkboxesElement.innerHTML = `
                 <div class="flex items-center gap-3 p-3 rounded-xl ${isPass ? 'bg-emerald-50 border border-emerald-100' : 'hover:bg-slate-50 border border-transparent'} transition-colors cursor-pointer w-full sm:w-auto">
                     <div class="modern-checkbox ${isPass ? 'checked' : ''}"></div>
@@ -580,22 +597,19 @@
             `;
         }
 
-        // ฟังก์ชันสำหรับวาดกราฟเปรียบเทียบใน Modal
+        // วาดกราฟแท่งเปรียบเทียบใน Modal
         function renderModalCompareChart(emp) {
             const ctx = document.getElementById('modalCompareChart').getContext('2d');
             if (modalChartInstance) modalChartInstance.destroy();
 
             const datasets = [];
-            
-            // กำหนดสีให้แต่ละรอบ
             const roundColors = {
-                30: { bg: 'rgba(99, 102, 241, 0.85)', border: 'rgb(99, 102, 241)' },   // Indigo
-                60: { bg: 'rgba(14, 165, 233, 0.85)', border: 'rgb(14, 165, 233)' },   // Sky
-                90: { bg: 'rgba(16, 185, 129, 0.85)', border: 'rgb(16, 185, 129)' },   // Emerald
-                119: { bg: 'rgba(245, 158, 11, 0.85)', border: 'rgb(245, 158, 11)' }   // Amber
+                30: { bg: 'rgba(99, 102, 241, 0.85)', border: 'rgb(99, 102, 241)' },
+                60: { bg: 'rgba(14, 165, 233, 0.85)', border: 'rgb(14, 165, 233)' },
+                90: { bg: 'rgba(16, 185, 129, 0.85)', border: 'rgb(16, 185, 129)' },
+                119: { bg: 'rgba(245, 158, 11, 0.85)', border: 'rgb(245, 158, 11)' }
             };
 
-            // ดึงข้อมูลเฉพาะรอบที่ประเมินแล้ว
             [30, 60, 90, 119].forEach(r => {
                 const roundData = emp.rounds[r];
                 if (roundData.status.includes('ประเมินแล้ว') && roundData.scores) {
@@ -617,7 +631,7 @@
             modalChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: evaluationTopics.map(t => t.short), // ใช้ชื่อย่อ 11 หัวข้อ
+                    labels: evaluationTopics.map(t => t.short),
                     datasets: datasets
                 },
                 options: {
@@ -679,13 +693,14 @@
         document.getElementById('modal-backdrop').addEventListener('click', closeModal);
 
         function loadCSVData() {
-            Papa.parse('e876b432.csv', {
+            // ดึงไฟล์ที่ถูกต้องมาใช้งาน ถ้าโหลดไม่สำเร็จให้รันข้อมูลจำลอง (Fallback)
+            Papa.parse('fcce47ef.csv', {
                 download: true,
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) { processCSVData(results.data); },
                 error: function(err) {
-                    console.error("CSV Load Error, using mock data:", err);
+                    console.warn("ไม่สามารถอ่านไฟล์ CSV ได้ (หรือรันจาก Local File), กำลังใช้ข้อมูลจำลองแทน", err);
                     useMockData();
                 }
             });
@@ -706,6 +721,7 @@
                 const s90 = row['สถานะ 90 วัน'] || 'ยังไม่ประเมิน';
                 const s119 = row['สถานะ 119 วัน'] || 'ยังไม่ประเมิน';
 
+                // ใช้คะแนนจำลอง หากใน CSV ไม่ได้ระบุคอลัมน์คะแนนมา
                 const rounds = {
                     30: { status: s30, scores: generateMockScores(s30) },
                     60: { status: s60, scores: generateMockScores(s60) },
@@ -735,10 +751,17 @@
             employeeList = [
                 { id: 1, name: 'นาย สมชาย รักดี', rounds: { 30: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 60: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 90: { status: mockStatus(false), scores: null }, 119: { status: mockStatus(false), scores: null } } },
                 { id: 2, name: 'นางสาว สมหญิง จริงใจ', rounds: { 30: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 60: { status: mockStatus(false), scores: null }, 90: { status: mockStatus(false), scores: null }, 119: { status: mockStatus(false), scores: null } } },
-                { id: 3, name: 'นาย พิชัย กล้าหาญ', rounds: { 30: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 60: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 90: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 119: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') } } }
+                { id: 3, name: 'นาย พิชัย กล้าหาญ', rounds: { 30: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 60: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 90: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 119: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') } } },
+                { id: 4, name: 'นาง มานี ใจดี', rounds: { 30: { status: mockStatus(false), scores: null }, 60: { status: mockStatus(false), scores: null }, 90: { status: mockStatus(false), scores: null }, 119: { status: mockStatus(false), scores: null } } }
             ];
             
-            let counts = { all: { evaluated: 3, pending: 0 }, 30: { evaluated: 3, pending: 0 }, 60: { evaluated: 2, pending: 1 }, 90: { evaluated: 1, pending: 2 }, 119: { evaluated: 1, pending: 2 } };
+            let counts = { 
+                all: { evaluated: 3, pending: 1 }, 
+                30: { evaluated: 3, pending: 1 }, 
+                60: { evaluated: 2, pending: 2 }, 
+                90: { evaluated: 1, pending: 3 }, 
+                119: { evaluated: 1, pending: 3 } 
+            };
             updateDashboard(counts);
         }
 
@@ -753,11 +776,10 @@
             renderSummaryCards();
             renderEmployeeList(employeeList);
             
-            // Allow DOM to update before initializing chart
-            setTimeout(initTopicComparisonChart, 100);
+            // Allow DOM to update before initializing Pie charts
+            setTimeout(() => initPieCharts(counts), 100);
         }
 
-        // Add some basic CSS animations dynamically for entry
         const style = document.createElement('style');
         style.innerHTML = `
             @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
