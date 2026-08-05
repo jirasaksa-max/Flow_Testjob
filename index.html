@@ -122,10 +122,10 @@
         
         <!-- Modal Content -->
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-            <div class="relative bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-2xl w-full border border-gray-100">
+            <div class="relative bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-4xl w-full border border-gray-100 flex flex-col max-h-[90vh]">
                 
                 <!-- Modal Header -->
-                <div class="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center shrink-0">
                     <h3 class="text-lg leading-6 font-bold text-gray-900" id="modal-title">
                         รายละเอียดการประเมิน
                     </h3>
@@ -137,19 +137,35 @@
                 </div>
                 
                 <!-- Modal Body -->
-                <div class="px-6 py-6">
-                    <div class="mb-4 bg-yellow-50 text-yellow-800 p-4 rounded-lg text-sm border border-yellow-200 flex items-start">
-                        <svg class="w-5 h-5 mr-2 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <p>นี่คือ Popup จำลองที่สร้างขึ้นตาม Requirement เพื่อเปิดแบบฟอร์มประเมิน หรือดูรายละเอียดของ <strong id="modal-emp-name" class="font-bold text-yellow-900"></strong></p>
+                <div class="px-6 py-6 overflow-y-auto custom-scrollbar flex-grow">
+                    <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h4 class="font-bold text-xl text-gray-800" id="modal-emp-name"></h4>
+                            <p class="text-sm text-gray-500 mt-1">แบบฟอร์มประเมินการปฏิบัติงานระยะทดลองงาน (FM-HRD-60)</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 text-sm" id="modal-status-badges">
+                            <!-- Status badges injected here -->
+                        </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 mt-4" id="modal-status-grid">
-                        <!-- Statuses injected here -->
+                    <div class="mt-6 border border-gray-200 rounded-xl overflow-hidden">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-100 text-gray-700">
+                                <tr>
+                                    <th class="px-4 py-3 font-semibold w-12 text-center">#</th>
+                                    <th class="px-4 py-3 font-semibold">หัวข้อการประเมิน</th>
+                                    <th class="px-4 py-3 font-semibold w-24 text-center">คะแนน</th>
+                                </tr>
+                            </thead>
+                            <tbody id="evaluation-topics-list" class="divide-y divide-gray-200 bg-white">
+                                <!-- Topics injected here by JS -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 
                 <!-- Modal Footer -->
-                <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end gap-3 rounded-b-2xl">
+                <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end gap-3 rounded-b-2xl shrink-0">
                     <button id="close-modal-btn" type="button" class="inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
                         ยกเลิก
                     </button>
@@ -166,6 +182,21 @@
         let summaryData = [];
         let employeeList = [];
         let chartInstance = null;
+
+        // ข้อมูลหัวข้อการประเมิน 11 ข้อ
+        const evaluationTopics = [
+            "<strong>ความรู้เฉพาะหน้าที่</strong> พิจารณาความเข้าใจในหน้าที่ วิธีปฎิบัติงาน ความรอบรู้ และสันทัดในงาน",
+            "<strong>การเรียนรู้งาน</strong> พิจารณาความสนใจในการเรียนรู้ รู้ขอบเขตของงานที่ต้องปฏิบัติ เรียนรู้งานได้รวดเร็ว สามารถปฎิบัติงานได้",
+            "<strong>ความขยันและเอาใจใส่งาน</strong> พิจารณาเป็นผู้ทำงานคล่องแคล่ว ความรวดเร็วในการปฎิบัติงาน ตวามกระตือรือร้น ในการทำงาน",
+            "<strong>คุณภาพงาน</strong> พิจารณาความถูกต้อง สมบูรณ์เรียบร้อย และเชื่อถือได้ของงาน",
+            "<strong>ปริมาณงาน</strong> พิจารณาผลงานที่ปฏิบัติสำเร็จลุล่วง มีปริมาณผลงานมาก หรือน้อยกว่าที่กำหนด",
+            "<strong>ความรับผิดชอบ</strong> พิจารณาความเอาใจใส่ ความตั้งใจ ความรับผิดชอบงานที่ปฏิบิติ โดยผู้บังคับบัญชาสามารถไว้วางใจ ไม่ต้องควบคุมดูแลอย่างใกล้ชิดตลอดเวลา",
+            "<strong>การให้ความร่วมมือ</strong> พิจารณาการให้ความช่วยเหลืองาน ผู้บังคับบัญชา เพื่อนร่วมงาน และบุคคลที่เกี่ยวข้อง มีมนุษย์สัมพันธ์ในการติดต่อประสานงาน",
+            "<strong>การปฎิบัติตามกฎระเบียบ</strong> พิจารณาการปฏิบัติตามกฎระเบียบและการอยู่ในวินัย",
+            "<strong>การเชื่อฟังคำสั่งผู้บังคับบัญชา</strong> พิจารณาความเต็มใจในการปฏิบัติงาน เมื่อได้รับคำสั่ง และมีความเคารพต่อหัวหน้างาน",
+            "<strong>การใช้เวลาและการตรงต่อเวลา</strong> พิจารณาความเที่ยงตรงในการรักษาเวลาทำงาน และลาหยุดงาน การใช้เวลาในการทำงานอย่างเต็มที่",
+            "<span class='text-blue-600'>*การพัฒนาผู้ใต้บังคับบัญชา</span> <span class='text-gray-500'>(ประเมินเฉพาะตำแหน่งที่มีผู้ใต้บังคับบัญชาเท่านั้น)</span> พิจารณาผลการพัฒนาผู้ใต้บังคับบัญชา ตามแผนการพัฒนาฯ เช่น การให้คำแนะนำ การสอนงาน/ถ่ายทอดความรู้ หรือการฝึกทักษะที่จำเป็นของงาน"
+        ];
 
         // --- DOM Elements ---
         const summaryContainer = document.getElementById('summary-cards-container');
@@ -346,26 +377,29 @@
 
             document.getElementById('modal-emp-name').innerText = emp.name;
             
-            // Populate status grid in modal
-            const gridHTML = `
-                <div class="bg-gray-50 p-3 rounded border border-gray-200">
-                    <p class="text-xs text-gray-500 mb-1">รอบ 30 วัน</p>
-                    <p class="font-medium ${getStatusColorClass(emp.status30)}">${emp.status30}</p>
-                </div>
-                <div class="bg-gray-50 p-3 rounded border border-gray-200">
-                    <p class="text-xs text-gray-500 mb-1">รอบ 60 วัน</p>
-                    <p class="font-medium ${getStatusColorClass(emp.status60)}">${emp.status60}</p>
-                </div>
-                <div class="bg-gray-50 p-3 rounded border border-gray-200">
-                    <p class="text-xs text-gray-500 mb-1">รอบ 90 วัน</p>
-                    <p class="font-medium ${getStatusColorClass(emp.status90)}">${emp.status90}</p>
-                </div>
-                <div class="bg-gray-50 p-3 rounded border border-gray-200">
-                    <p class="text-xs text-gray-500 mb-1">รอบ 119 วัน</p>
-                    <p class="font-medium ${getStatusColorClass(emp.status119)}">${emp.status119}</p>
-                </div>
+            // Populate status badges in modal
+            const badgesHTML = `
+                <span class="px-2.5 py-1 rounded-md text-xs font-medium border ${emp.status30.includes('ประเมิน') && !emp.status30.includes('ยังไม่') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'}">30 วัน: ${emp.status30}</span>
+                <span class="px-2.5 py-1 rounded-md text-xs font-medium border ${emp.status60.includes('ประเมิน') && !emp.status60.includes('ยังไม่') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'}">60 วัน: ${emp.status60}</span>
+                <span class="px-2.5 py-1 rounded-md text-xs font-medium border ${emp.status90.includes('ประเมิน') && !emp.status90.includes('ยังไม่') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'}">90 วัน: ${emp.status90}</span>
+                <span class="px-2.5 py-1 rounded-md text-xs font-medium border ${emp.status119.includes('ประเมิน') && !emp.status119.includes('ยังไม่') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'}">119 วัน: ${emp.status119}</span>
             `;
-            document.getElementById('modal-status-grid').innerHTML = gridHTML;
+            document.getElementById('modal-status-badges').innerHTML = badgesHTML;
+
+            // Populate Form Topics
+            const topicsList = document.getElementById('evaluation-topics-list');
+            topicsList.innerHTML = '';
+            evaluationTopics.forEach((topic, index) => {
+                topicsList.innerHTML += `
+                    <tr class="hover:bg-gray-50/80 transition-colors">
+                        <td class="px-4 py-3 text-center text-gray-500 align-top">${index + 1}</td>
+                        <td class="px-4 py-3 text-gray-700 leading-relaxed align-top">${topic}</td>
+                        <td class="px-4 py-3 align-top">
+                            <input type="number" min="0" max="10" placeholder="-" class="w-full text-center border border-gray-300 rounded-lg py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors shadow-sm bg-white">
+                        </td>
+                    </tr>
+                `;
+            });
 
             // Show Modal
             modal.classList.remove('hidden');
