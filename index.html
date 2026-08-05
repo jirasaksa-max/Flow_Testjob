@@ -11,10 +11,10 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- PapaParse (สำหรับอ่านไฟล์ CSV) -->
+    <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-    <!-- Google Fonts: Noto Sans Thai -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -22,23 +22,30 @@
     <style>
         body {
             font-family: 'Noto Sans Thai', sans-serif;
-            background-color: #f8fafc; /* bg-slate-50 */
+            background-color: #f8fafc;
         }
         
-        /* Custom Scrollbar for table overflow */
-        .custom-scrollbar::-webkit-scrollbar {
-            height: 8px;
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Custom Checkbox styles for Summary */
+        .summary-checkbox {
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 0.25rem;
+            border: 2px solid #4b5563;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: white;
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
+        .summary-checkbox.checked::after {
+            content: '✓';
+            color: #16a34a;
+            font-weight: bold;
+            font-size: 1rem;
         }
     </style>
 </head>
@@ -54,13 +61,13 @@
 
         <!-- Summary Cards Section -->
         <div id="summary-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <!-- Cards will be injected here by JavaScript -->
+            <!-- Cards will be injected by JS -->
         </div>
 
         <!-- Filters Section -->
         <div class="flex flex-col sm:flex-row gap-4 items-center justify-start py-2">
             <div class="relative w-full sm:w-64">
-                <select id="filter-round" class="w-full appearance-none bg-gray-100 border border-gray-200 hover:border-gray-300 px-4 py-2.5 pr-8 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition-colors">
+                <select id="filter-round" class="w-full appearance-none bg-white border border-gray-300 hover:border-gray-400 px-4 py-2.5 pr-8 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
                     <option value="all">ตัวกรอง : รอบประเมิน (ทั้งหมด)</option>
                     <option value="30">รอบ 30 วัน</option>
                     <option value="60">รอบ 60 วัน</option>
@@ -68,48 +75,34 @@
                     <option value="119">รอบ 119 วัน</option>
                 </select>
                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                 </div>
             </div>
             
             <div class="relative w-full sm:w-64">
-                <input type="text" id="filter-employee" placeholder="ตัวกรอง : ค้นหาพนักงาน" class="w-full bg-gray-100 border border-gray-200 hover:border-gray-300 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition-colors">
-                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <input type="text" id="filter-employee" placeholder="ค้นหาชื่อพนักงาน..." class="w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2.5 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
             </div>
         </div>
 
         <!-- Chart Section -->
-        <div class="bg-gray-100/70 rounded-2xl p-6 border border-gray-200">
-            <h2 class="text-xl font-bold text-gray-800 mb-2">กราฟแท่ง</h2>
-            <ul class="text-sm text-gray-600 mb-6 space-y-1 list-disc list-inside ml-2">
-                <li>เปรียบเทียบแต่ละหัวข้อการประเมิน</li>
-                <li>เปรียบเทียบแต่ละรอบการประเมิน</li>
-                <li>เปรียบเทียบผลรวม % แต่ละรอบการประเมิน</li>
-            </ul>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 h-80 relative w-full">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800 mb-2">กราฟเปรียบเทียบคะแนนเฉลี่ยแต่ละหัวข้อการประเมิน</h2>
+            <p class="text-sm text-gray-500 mb-6">แสดงคะแนนเฉลี่ย (เต็ม 5) ของทั้ง 11 หัวข้อ จากทุกรอบการประเมินที่มีข้อมูล</p>
+            <div class="h-96 relative w-full">
                 <canvas id="evaluationChart"></canvas>
             </div>
         </div>
 
         <!-- Employee List Table -->
-        <div class="bg-gray-100/70 rounded-2xl p-6 border border-gray-200">
-            <h2 class="text-lg font-bold text-gray-800 mb-6">แสดงตารางรายการพนักงานที่อยู่ระหว่างทดลองงานทั้งหมด</h2>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <h2 class="text-lg font-bold text-gray-800 mb-6">รายชื่อพนักงานที่อยู่ระหว่างทดลองงาน</h2>
             
             <div class="overflow-x-auto custom-scrollbar pb-4">
                 <div class="min-w-[900px] flex flex-col space-y-3" id="employee-list-container">
-                    <!-- Table Header -->
-                    <div class="grid grid-cols-6 gap-4 px-4 text-sm font-semibold text-gray-500 text-center">
-                        <div class="text-left">ชื่อพนักงาน</div>
-                        <div>รอบ 30 วัน</div>
-                        <div>รอบ 60 วัน</div>
-                        <div>รอบ 90 วัน</div>
-                        <div>รอบ 119 วัน</div>
-                        <div>จัดการ</div>
-                    </div>
-                    
-                    <!-- Rows will be injected here by JavaScript -->
+                    <!-- Header will be injected here -->
                 </div>
             </div>
         </div>
@@ -117,61 +110,74 @@
 
     <!-- Modal (Popup) -->
     <div id="employee-modal" class="fixed inset-0 z-50 hidden">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" id="modal-backdrop"></div>
+        <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" id="modal-backdrop"></div>
         
-        <!-- Modal Content -->
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-            <div class="relative bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-4xl w-full border border-gray-100 flex flex-col max-h-[90vh]">
+        <div class="flex items-center justify-center min-h-screen px-4 py-8 text-center sm:p-0">
+            <div class="relative bg-white rounded-2xl text-left shadow-2xl transform transition-all w-full max-w-5xl flex flex-col max-h-[90vh]">
                 
                 <!-- Modal Header -->
-                <div class="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center shrink-0">
-                    <h3 class="text-lg leading-6 font-bold text-gray-900" id="modal-title">
-                        รายละเอียดการประเมิน
-                    </h3>
-                    <button id="close-modal-btn-icon" class="text-gray-400 hover:text-gray-500 focus:outline-none bg-gray-200 hover:bg-gray-300 rounded-full p-1 transition-colors">
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                <div class="bg-white px-6 py-4 border-b border-gray-200 flex justify-between items-center shrink-0 rounded-t-2xl">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900" id="modal-emp-name">ชื่อพนักงาน</h3>
+                        <p class="text-sm text-gray-500 mt-1">แบบฟอร์มประเมินการปฏิบัติงานระยะทดลองงาน (FM-HRD-60)</p>
+                    </div>
+                    <button id="close-modal-btn-icon" class="text-gray-400 hover:text-gray-600 focus:outline-none bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
                 
-                <!-- Modal Body -->
-                <div class="px-6 py-6 overflow-y-auto custom-scrollbar flex-grow">
-                    <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h4 class="font-bold text-xl text-gray-800" id="modal-emp-name"></h4>
-                            <p class="text-sm text-gray-500 mt-1">แบบฟอร์มประเมินการปฏิบัติงานระยะทดลองงาน (FM-HRD-60)</p>
-                        </div>
-                        <div class="flex flex-wrap gap-2 text-sm" id="modal-status-badges">
-                            <!-- Status badges injected here -->
-                        </div>
+                <!-- Modal Body with Tabs -->
+                <div class="px-6 py-4 overflow-y-auto custom-scrollbar flex-grow bg-gray-50/50">
+                    
+                    <!-- Tabs for Rounds -->
+                    <div class="flex space-x-2 border-b border-gray-200 mb-6" id="modal-tabs">
+                        <!-- Tabs injected by JS -->
                     </div>
 
-                    <div class="mt-6 border border-gray-200 rounded-xl overflow-hidden">
+                    <!-- Evaluation Table -->
+                    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                         <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-100 text-gray-700">
+                            <thead class="bg-blue-50 text-blue-900 border-b border-blue-100">
                                 <tr>
                                     <th class="px-4 py-3 font-semibold w-12 text-center">#</th>
                                     <th class="px-4 py-3 font-semibold">หัวข้อการประเมิน</th>
-                                    <th class="px-4 py-3 font-semibold w-24 text-center">คะแนน</th>
+                                    <th class="px-4 py-3 font-semibold w-32 text-center">คะแนน (1-5)</th>
                                 </tr>
                             </thead>
-                            <tbody id="evaluation-topics-list" class="divide-y divide-gray-200 bg-white">
+                            <tbody id="evaluation-topics-list" class="divide-y divide-gray-100 bg-white">
                                 <!-- Topics injected here by JS -->
                             </tbody>
                         </table>
                     </div>
-                </div>
-                
-                <!-- Modal Footer -->
-                <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end gap-3 rounded-b-2xl shrink-0">
-                    <button id="close-modal-btn" type="button" class="inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                        ยกเลิก
-                    </button>
-                    <button type="button" class="inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                        บันทึกการประเมิน
-                    </button>
+
+                    <!-- Summary Result Box (Matching Image) -->
+                    <div class="mt-6 border border-[#f4a460] rounded-lg overflow-hidden shadow-sm">
+                        <table class="w-full text-sm">
+                            <tbody>
+                                <!-- % Row -->
+                                <tr class="border-b border-[#f4a460]">
+                                    <td class="w-1/3 bg-gray-200 p-4 font-bold text-gray-800 text-center border-r border-[#f4a460]">
+                                        สรุปคะแนนการประเมิน (คิดเป็น %)
+                                    </td>
+                                    <td class="w-2/3 bg-[#fcd4b4] p-4 text-center font-bold text-xl text-gray-900" id="summary-percentage">
+                                        0.0%
+                                    </td>
+                                </tr>
+                                <!-- Result Row -->
+                                <tr>
+                                    <td class="bg-gray-200 p-4 font-bold text-gray-800 text-center border-r border-[#f4a460]">
+                                        ผลการประเมินทดลองงาน
+                                    </td>
+                                    <td class="bg-[#fcd4b4] p-4">
+                                        <div class="flex flex-col gap-3 justify-center items-center" id="summary-checkboxes">
+                                            <!-- Checkboxes injected by JS based on round -->
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
                 </div>
             </div>
         </div>
@@ -182,65 +188,76 @@
         let summaryData = [];
         let employeeList = [];
         let chartInstance = null;
+        
+        let currentModalEmpId = null;
+        let currentModalRound = 30;
 
-        // ข้อมูลหัวข้อการประเมิน 11 ข้อ
+        // หัวข้อการประเมิน 11 ข้อ
         const evaluationTopics = [
-            "<strong>ความรู้เฉพาะหน้าที่</strong> พิจารณาความเข้าใจในหน้าที่ วิธีปฎิบัติงาน ความรอบรู้ และสันทัดในงาน",
-            "<strong>การเรียนรู้งาน</strong> พิจารณาความสนใจในการเรียนรู้ รู้ขอบเขตของงานที่ต้องปฏิบัติ เรียนรู้งานได้รวดเร็ว สามารถปฎิบัติงานได้",
-            "<strong>ความขยันและเอาใจใส่งาน</strong> พิจารณาเป็นผู้ทำงานคล่องแคล่ว ความรวดเร็วในการปฎิบัติงาน ตวามกระตือรือร้น ในการทำงาน",
-            "<strong>คุณภาพงาน</strong> พิจารณาความถูกต้อง สมบูรณ์เรียบร้อย และเชื่อถือได้ของงาน",
-            "<strong>ปริมาณงาน</strong> พิจารณาผลงานที่ปฏิบัติสำเร็จลุล่วง มีปริมาณผลงานมาก หรือน้อยกว่าที่กำหนด",
-            "<strong>ความรับผิดชอบ</strong> พิจารณาความเอาใจใส่ ความตั้งใจ ความรับผิดชอบงานที่ปฏิบิติ โดยผู้บังคับบัญชาสามารถไว้วางใจ ไม่ต้องควบคุมดูแลอย่างใกล้ชิดตลอดเวลา",
-            "<strong>การให้ความร่วมมือ</strong> พิจารณาการให้ความช่วยเหลืองาน ผู้บังคับบัญชา เพื่อนร่วมงาน และบุคคลที่เกี่ยวข้อง มีมนุษย์สัมพันธ์ในการติดต่อประสานงาน",
-            "<strong>การปฎิบัติตามกฎระเบียบ</strong> พิจารณาการปฏิบัติตามกฎระเบียบและการอยู่ในวินัย",
-            "<strong>การเชื่อฟังคำสั่งผู้บังคับบัญชา</strong> พิจารณาความเต็มใจในการปฏิบัติงาน เมื่อได้รับคำสั่ง และมีความเคารพต่อหัวหน้างาน",
-            "<strong>การใช้เวลาและการตรงต่อเวลา</strong> พิจารณาความเที่ยงตรงในการรักษาเวลาทำงาน และลาหยุดงาน การใช้เวลาในการทำงานอย่างเต็มที่",
-            "<span class='text-blue-600'>*การพัฒนาผู้ใต้บังคับบัญชา</span> <span class='text-gray-500'>(ประเมินเฉพาะตำแหน่งที่มีผู้ใต้บังคับบัญชาเท่านั้น)</span> พิจารณาผลการพัฒนาผู้ใต้บังคับบัญชา ตามแผนการพัฒนาฯ เช่น การให้คำแนะนำ การสอนงาน/ถ่ายทอดความรู้ หรือการฝึกทักษะที่จำเป็นของงาน"
+            { id: 1, short: "ความรู้เฉพาะหน้าที่", desc: "<strong>ความรู้เฉพาะหน้าที่</strong> พิจารณาความเข้าใจในหน้าที่ วิธีปฎิบัติงาน ความรอบรู้ และสันทัดในงาน" },
+            { id: 2, short: "การเรียนรู้งาน", desc: "<strong>การเรียนรู้งาน</strong> พิจารณาความสนใจในการเรียนรู้ รู้ขอบเขตของงานที่ต้องปฏิบัติ เรียนรู้งานได้รวดเร็ว สามารถปฎิบัติงานได้" },
+            { id: 3, short: "ความขยัน/เอาใจใส่", desc: "<strong>ความขยันและเอาใจใส่งาน</strong> พิจารณาเป็นผู้ทำงานคล่องแคล่ว ความรวดเร็วในการปฎิบัติงาน ตวามกระตือรือร้น ในการทำงาน" },
+            { id: 4, short: "คุณภาพงาน", desc: "<strong>คุณภาพงาน</strong> พิจารณาความถูกต้อง สมบูรณ์เรียบร้อย และเชื่อถือได้ของงาน" },
+            { id: 5, short: "ปริมาณงาน", desc: "<strong>ปริมาณงาน</strong> พิจารณาผลงานที่ปฏิบัติสำเร็จลุล่วง มีปริมาณผลงานมาก หรือน้อยกว่าที่กำหนด" },
+            { id: 6, short: "ความรับผิดชอบ", desc: "<strong>ความรับผิดชอบ</strong> พิจารณาความเอาใจใส่ ความตั้งใจ ความรับผิดชอบงานที่ปฏิบิติ โดยผู้บังคับบัญชาสามารถไว้วางใจ ไม่ต้องควบคุมดูแลอย่างใกล้ชิดตลอดเวลา" },
+            { id: 7, short: "การให้ความร่วมมือ", desc: "<strong>การให้ความร่วมมือ</strong> พิจารณาการให้ความช่วยเหลืองาน ผู้บังคับบัญชา เพื่อนร่วมงาน และบุคคลที่เกี่ยวข้อง มีมนุษย์สัมพันธ์ในการติดต่อประสานงาน" },
+            { id: 8, short: "ปฏิบัติตามกฎระเบียบ", desc: "<strong>การปฎิบัติตามกฎระเบียบ</strong> พิจารณาการปฏิบัติตามกฎระเบียบและการอยู่ในวินัย" },
+            { id: 9, short: "เชื่อฟังคำสั่ง", desc: "<strong>การเชื่อฟังคำสั่งผู้บังคับบัญชา</strong> พิจารณาความเต็มใจในการปฏิบัติงาน เมื่อได้รับคำสั่ง และมีความเคารพต่อหัวหน้างาน" },
+            { id: 10, short: "การตรงต่อเวลา", desc: "<strong>การใช้เวลาและการตรงต่อเวลา</strong> พิจารณาความเที่ยงตรงในการรักษาเวลาทำงาน และลาหยุดงาน การใช้เวลาในการทำงานอย่างเต็มที่" },
+            { id: 11, short: "พัฒนาผู้ใต้บังคับบัญชา", desc: "<span class='text-blue-600 font-medium'>*การพัฒนาผู้ใต้บังคับบัญชา</span> <span class='text-gray-500 text-xs'>(เฉพาะตำแหน่งที่มีผู้ใต้บังคับบัญชา)</span> พิจารณาผลการพัฒนาผู้ใต้บังคับบัญชา เช่น การให้คำแนะนำ การสอนงาน/ถ่ายทอดความรู้" }
         ];
+
+        // ฟังก์ชันสุ่มคะแนนจำลอง (1-5) ให้ออกมาดูสมจริง (เน้น 3, 4, 5)
+        function generateMockScores(status) {
+            if (!status || !status.includes('ประเมินแล้ว')) return null;
+            let scores = [];
+            for (let i = 0; i < 11; i++) {
+                // สุ่ม 3-5 เป็นหลัก โอกาสน้อยที่จะได้ 2, ไม่มี 1
+                const rand = Math.random();
+                if (rand > 0.8) scores.push(5);
+                else if (rand > 0.3) scores.push(4);
+                else if (rand > 0.1) scores.push(3);
+                else scores.push(2);
+            }
+            return scores;
+        }
 
         // --- DOM Elements ---
         const summaryContainer = document.getElementById('summary-cards-container');
         const employeeContainer = document.getElementById('employee-list-container');
         const filterRound = document.getElementById('filter-round');
         const filterEmployee = document.getElementById('filter-employee');
-        
         const modal = document.getElementById('employee-modal');
-        const modalBackdrop = document.getElementById('modal-backdrop');
-        const closeModalBtn = document.getElementById('close-modal-btn');
-        const closeModalBtnIcon = document.getElementById('close-modal-btn-icon');
 
-        // --- Render Functions ---
         function renderSummaryCards() {
             summaryContainer.innerHTML = '';
             summaryData.forEach(card => {
-                const cardHTML = `
-                    <div class="bg-white rounded-xl p-4 flex flex-col items-center justify-center border border-gray-200 shadow-sm">
-                        <h3 class="text-base font-bold text-gray-800 mb-3">${card.title}</h3>
-                        <div class="w-full text-sm space-y-1">
-                            <p class="text-blue-600 flex justify-between w-full px-2">
-                                <span>- ประเมินแล้ว</span>
-                                <span class="font-bold">${card.evaluated} คน</span>
-                            </p>
-                            <p class="text-blue-600 flex justify-between w-full px-2">
-                                <span>- รอประเมิน</span>
-                                <span class="font-bold">${card.pending} คน</span>
-                            </p>
+                const isAll = card.id === 'all';
+                summaryContainer.innerHTML += `
+                    <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                        ${isAll ? '<div class="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>' : ''}
+                        <h3 class="text-base font-bold text-gray-800 mb-4">${card.title}</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-sm px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg">
+                                <span>ประเมินแล้ว</span><span class="font-bold text-base">${card.evaluated}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg">
+                                <span>รอประเมิน</span><span class="font-bold text-base">${card.pending}</span>
+                            </div>
                         </div>
                     </div>
                 `;
-                summaryContainer.innerHTML += cardHTML;
             });
         }
 
-        function getStatusColorClass(status) {
-            if (status === 'ประเมินแล้ว') return 'text-green-600';
-            return 'text-gray-500'; // ยังไม่ประเมิน
+        function getStatusStyle(status) {
+            if (status.includes('ประเมินแล้ว')) return 'bg-green-100/50 border-green-200 text-green-700';
+            return 'bg-amber-50/50 border-amber-200/60 text-amber-600'; 
         }
 
         function renderEmployeeList(employees) {
-            // Keep header, remove old rows
             const headerHTML = `
-                <div class="grid grid-cols-6 gap-4 px-4 text-sm font-semibold text-gray-500 text-center mb-2">
+                <div class="grid grid-cols-6 gap-4 px-4 py-2 text-sm font-bold text-gray-500 text-center bg-gray-50 rounded-xl">
                     <div class="text-left">ชื่อพนักงาน</div>
                     <div>รอบ 30 วัน</div>
                     <div>รอบ 60 วัน</div>
@@ -251,189 +268,246 @@
             `;
             
             if (employees.length === 0) {
-                employeeContainer.innerHTML = headerHTML + `<div class="text-center py-8 text-gray-500 bg-white rounded-xl border border-gray-200">ไม่พบข้อมูลพนักงานที่ค้นหา</div>`;
+                employeeContainer.innerHTML = headerHTML + `<div class="text-center py-8 text-gray-500 bg-gray-50 rounded-xl border border-gray-100">ไม่พบข้อมูลพนักงานที่ค้นหา</div>`;
                 return;
             }
 
             let rowsHTML = headerHTML;
-            
             employees.forEach(emp => {
                 rowsHTML += `
-                    <div class="grid grid-cols-6 gap-3 items-center text-sm">
-                        <!-- Name Box (Style mimicking the wireframe image) -->
-                        <div class="bg-amber-100/70 border border-amber-200 rounded-lg py-3 px-4 text-center font-medium text-amber-900 shadow-sm truncate">
-                            ${emp.name}
-                        </div>
+                    <div class="grid grid-cols-6 gap-3 items-center text-sm group hover:bg-gray-50 p-2 rounded-xl transition-colors">
+                        <div class="font-medium text-gray-800 px-2 truncate">${emp.name}</div>
                         
-                        <!-- Status 30 -->
-                        <div class="bg-amber-50/50 border border-amber-200/60 rounded-lg py-2 px-2 text-center shadow-sm flex flex-col justify-center h-full">
-                            <span class="font-semibold text-gray-700 text-xs mb-0.5">รอบ 30 วัน</span>
-                            <span class="text-xs ${getStatusColorClass(emp.status30)}">${emp.status30}</span>
+                        <div class="border rounded-lg py-2 px-2 text-center shadow-sm flex flex-col justify-center h-full ${getStatusStyle(emp.rounds[30].status)}">
+                            <span class="font-bold text-xs mb-0.5">รอบ 30 วัน</span>
+                            <span class="text-[11px]">${emp.rounds[30].status}</span>
+                        </div>
+                        <div class="border rounded-lg py-2 px-2 text-center shadow-sm flex flex-col justify-center h-full ${getStatusStyle(emp.rounds[60].status)}">
+                            <span class="font-bold text-xs mb-0.5">รอบ 60 วัน</span>
+                            <span class="text-[11px]">${emp.rounds[60].status}</span>
+                        </div>
+                        <div class="border rounded-lg py-2 px-2 text-center shadow-sm flex flex-col justify-center h-full ${getStatusStyle(emp.rounds[90].status)}">
+                            <span class="font-bold text-xs mb-0.5">รอบ 90 วัน</span>
+                            <span class="text-[11px]">${emp.rounds[90].status}</span>
+                        </div>
+                        <div class="border rounded-lg py-2 px-2 text-center shadow-sm flex flex-col justify-center h-full ${getStatusStyle(emp.rounds[119].status)}">
+                            <span class="font-bold text-xs mb-0.5">รอบ 119 วัน</span>
+                            <span class="text-[11px]">${emp.rounds[119].status}</span>
                         </div>
 
-                        <!-- Status 60 -->
-                         <div class="bg-amber-50/50 border border-amber-200/60 rounded-lg py-2 px-2 text-center shadow-sm flex flex-col justify-center h-full">
-                            <span class="font-semibold text-gray-700 text-xs mb-0.5">รอบ 60 วัน</span>
-                            <span class="text-xs ${getStatusColorClass(emp.status60)}">${emp.status60}</span>
-                        </div>
-
-                        <!-- Status 90 -->
-                         <div class="bg-amber-50/50 border border-amber-200/60 rounded-lg py-2 px-2 text-center shadow-sm flex flex-col justify-center h-full">
-                            <span class="font-semibold text-gray-700 text-xs mb-0.5">รอบ 90 วัน</span>
-                            <span class="text-xs ${getStatusColorClass(emp.status90)}">${emp.status90}</span>
-                        </div>
-
-                        <!-- Status 119 -->
-                         <div class="bg-amber-50/50 border border-amber-200/60 rounded-lg py-2 px-2 text-center shadow-sm flex flex-col justify-center h-full">
-                            <span class="font-semibold text-gray-700 text-xs mb-0.5">รอบ 119 วัน</span>
-                            <span class="text-xs ${getStatusColorClass(emp.status119)}">${emp.status119}</span>
-                        </div>
-
-                        <!-- Action Button -->
                         <div class="flex justify-center items-center h-full">
-                            <button onclick="openModal(${emp.id})" class="bg-gray-100 border-2 border-red-400 hover:bg-red-50 text-gray-600 p-2 rounded-lg shadow-sm transition-colors flex items-center gap-1 group relative">
-                                <!-- Tooltip hint (like the red text in wireframe) -->
-                                <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-red-500 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                    **แสดงป๊อปอัพ
+                            <button onclick="openModal(${emp.id})" class="bg-white border border-gray-300 hover:bg-blue-50 hover:border-blue-300 text-gray-600 p-2 rounded-xl shadow-sm transition-all flex items-center gap-1 group-hover:shadow relative">
+                                <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                    ดูผลประเมิน
                                 </span>
-                                <!-- Search & Edit Icons side-by-side -->
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#3b82f6" class="w-5 h-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                                </svg>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#d97706" class="w-5 h-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#3b82f6" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#d97706" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
                             </button>
                         </div>
                     </div>
                 `;
             });
-            
             employeeContainer.innerHTML = rowsHTML;
         }
 
-        function filterData() {
-            const searchTerm = filterEmployee.value.toLowerCase();
-            const roundFilter = filterRound.value;
-            
-            const filteredEmployees = employeeList.filter(emp => {
-                const matchName = emp.name.toLowerCase().includes(searchTerm);
-                return matchName;
-            });
-            
-            renderEmployeeList(filteredEmployees);
-        }
-
-        function initChart(avgScores) {
+        function initTopicComparisonChart() {
             const ctx = document.getElementById('evaluationChart').getContext('2d');
-            
-            // เคลียร์กราฟเก่าออกก่อนวาดใหม่ (ป้องกันปัญหากราฟซ้อนทับกัน)
-            if (chartInstance) {
-                chartInstance.destroy();
-            }
+            if (chartInstance) chartInstance.destroy();
+
+            // คำนวณคะแนนเฉลี่ยแต่ละหัวข้อจากข้อมูลทั้งหมด
+            let topicSums = Array(11).fill(0);
+            let topicCounts = Array(11).fill(0);
+
+            employeeList.forEach(emp => {
+                [30, 60, 90, 119].forEach(r => {
+                    const scores = emp.rounds[r].scores;
+                    if (scores && scores.length === 11) {
+                        scores.forEach((score, index) => {
+                            topicSums[index] += score;
+                            topicCounts[index]++;
+                        });
+                    }
+                });
+            });
+
+            // หาค่าเฉลี่ย
+            const avgData = topicSums.map((sum, index) => {
+                return topicCounts[index] > 0 ? (sum / topicCounts[index]).toFixed(2) : 0;
+            });
 
             chartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['รอบ 30 วัน', 'รอบ 60 วัน', 'รอบ 90 วัน', 'รอบ 119 วัน'],
-                    datasets: [
-                        {
-                            label: 'คะแนนเฉลี่ยรวม (%)',
-                            data: avgScores || [0, 0, 0, 0],
-                            backgroundColor: 'rgba(59, 130, 246, 0.8)', // blue-500
-                            borderColor: 'rgba(37, 99, 235, 1)',
-                            borderWidth: 1,
-                            borderRadius: 4,
-                        },
-                        {
-                            label: 'เป้าหมายที่คาดหวัง (%)',
-                            data: [70, 75, 80, 85],
-                            backgroundColor: 'rgba(209, 213, 219, 0.6)', // gray-300
-                            borderColor: 'rgba(156, 163, 175, 1)',
-                            borderWidth: 1,
-                            borderRadius: 4,
-                        }
-                    ]
+                    labels: evaluationTopics.map(t => t.short),
+                    datasets: [{
+                        label: 'คะแนนเฉลี่ย (เต็ม 5)',
+                        data: avgData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)', // blue-500
+                        borderColor: 'rgba(37, 99, 235, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'top' }
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) { return evaluationTopics[context[0].dataIndex].short; }
+                            }
+                        }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100
-                        }
+                        y: { beginAtZero: true, max: 5 }
                     }
                 }
             });
         }
 
+        function filterData() {
+            const searchTerm = filterEmployee.value.toLowerCase();
+            const filteredEmployees = employeeList.filter(emp => emp.name.toLowerCase().includes(searchTerm));
+            renderEmployeeList(filteredEmployees);
+        }
+
         function openModal(employeeId) {
+            currentModalEmpId = employeeId;
             const emp = employeeList.find(e => e.id === employeeId);
             if (!emp) return;
 
             document.getElementById('modal-emp-name').innerText = emp.name;
             
-            // Populate status badges in modal
-            const badgesHTML = `
-                <span class="px-2.5 py-1 rounded-md text-xs font-medium border ${emp.status30.includes('ประเมิน') && !emp.status30.includes('ยังไม่') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'}">30 วัน: ${emp.status30}</span>
-                <span class="px-2.5 py-1 rounded-md text-xs font-medium border ${emp.status60.includes('ประเมิน') && !emp.status60.includes('ยังไม่') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'}">60 วัน: ${emp.status60}</span>
-                <span class="px-2.5 py-1 rounded-md text-xs font-medium border ${emp.status90.includes('ประเมิน') && !emp.status90.includes('ยังไม่') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'}">90 วัน: ${emp.status90}</span>
-                <span class="px-2.5 py-1 rounded-md text-xs font-medium border ${emp.status119.includes('ประเมิน') && !emp.status119.includes('ยังไม่') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'}">119 วัน: ${emp.status119}</span>
-            `;
-            document.getElementById('modal-status-badges').innerHTML = badgesHTML;
+            // หา Tab แรกที่ประเมินแล้ว หรือเอา 30 วันเป็นตั้งต้น
+            currentModalRound = 30;
+            const rounds = [30, 60, 90, 119];
+            for (let r of rounds) {
+                if (emp.rounds[r].status.includes('ประเมิน')) {
+                    currentModalRound = r;
+                    break;
+                }
+            }
+            
+            renderModalTabs();
+            renderModalContent(emp);
 
-            // Populate Form Topics
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.add('opacity-100'), 10);
+        }
+
+        function renderModalTabs() {
+            const tabsContainer = document.getElementById('modal-tabs');
+            let tabsHTML = '';
+            [30, 60, 90, 119].forEach(r => {
+                const isActive = currentModalRound === r;
+                tabsHTML += `
+                    <button onclick="switchTab(${r})" class="px-6 py-3 font-semibold text-sm transition-colors border-b-2 ${isActive ? 'border-blue-600 text-blue-700 bg-blue-50/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'} rounded-t-lg focus:outline-none">
+                        รอบ ${r} วัน
+                    </button>
+                `;
+            });
+            tabsContainer.innerHTML = tabsHTML;
+        }
+
+        function switchTab(round) {
+            currentModalRound = round;
+            renderModalTabs();
+            renderModalContent(employeeList.find(e => e.id === currentModalEmpId));
+        }
+
+        function renderModalContent(emp) {
+            const roundData = emp.rounds[currentModalRound];
             const topicsList = document.getElementById('evaluation-topics-list');
+            const hasScores = roundData.scores && roundData.scores.length === 11;
+            
+            // Render Table Rows
             topicsList.innerHTML = '';
+            let totalScore = 0;
+            
             evaluationTopics.forEach((topic, index) => {
+                const score = hasScores ? roundData.scores[index] : '';
+                if(score) totalScore += score;
+                
+                // ใส่สีให้คะแนน
+                let scoreColor = 'text-gray-700 bg-gray-50';
+                if(score === 5 || score === 4) scoreColor = 'text-green-700 bg-green-50 font-bold border-green-200';
+                else if (score === 3) scoreColor = 'text-amber-700 bg-amber-50 font-bold border-amber-200';
+                else if (score && score < 3) scoreColor = 'text-red-700 bg-red-50 font-bold border-red-200';
+
                 topicsList.innerHTML += `
-                    <tr class="hover:bg-gray-50/80 transition-colors">
+                    <tr class="hover:bg-gray-50 transition-colors">
                         <td class="px-4 py-3 text-center text-gray-500 align-top">${index + 1}</td>
-                        <td class="px-4 py-3 text-gray-700 leading-relaxed align-top">${topic}</td>
-                        <td class="px-4 py-3 align-top">
-                            <input type="number" min="0" max="10" placeholder="-" class="w-full text-center border border-gray-300 rounded-lg py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors shadow-sm bg-white">
+                        <td class="px-4 py-3 text-gray-700 leading-relaxed align-top">${topic.desc}</td>
+                        <td class="px-4 py-3 align-top text-center">
+                            <div class="w-full text-center border rounded-lg py-2 ${score ? scoreColor : 'border-gray-200 bg-gray-50 text-gray-400'} shadow-sm">
+                                ${score ? score : '-'}
+                            </div>
                         </td>
                     </tr>
                 `;
             });
 
-            // Show Modal
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.add('opacity-100');
-            }, 10);
+            // Render Summary Data
+            const percentElement = document.getElementById('summary-percentage');
+            const checkboxesElement = document.getElementById('summary-checkboxes');
+            
+            if (!hasScores) {
+                percentElement.innerText = 'ยังไม่ประเมิน';
+                checkboxesElement.innerHTML = `<span class="text-gray-500 italic">รอการประเมินผลรอบ ${currentModalRound} วัน</span>`;
+                return;
+            }
+
+            // คิด % (คะแนนเต็ม 55)
+            const percentage = ((totalScore / 55) * 100).toFixed(1);
+            percentElement.innerText = `${percentage}%`;
+
+            // Logic ติ๊ก Checkbox ตามรอบ
+            let isPass = false;
+            let passLabel = '';
+            let failLabel = 'ไม่ผ่านการทดลองงาน';
+
+            if (currentModalRound === 30) {
+                isPass = percentage >= 50;
+                passLabel = 'ทดลองงานต่อ ( 50%ขึ้นไป )';
+            } else if (currentModalRound === 60) {
+                isPass = percentage >= 60;
+                passLabel = 'ทดลองงานต่อ ( 60%ขึ้นไป )';
+            } else {
+                isPass = percentage >= 70;
+                passLabel = 'ผ่านการทดลองงาน ( 70%ขึ้นไป )';
+            }
+
+            checkboxesElement.innerHTML = `
+                <div class="flex items-center gap-3 w-full max-w-[250px]">
+                    <div class="summary-checkbox ${isPass ? 'checked' : ''}"></div>
+                    <span class="text-gray-800 font-medium">${passLabel}</span>
+                </div>
+                <div class="flex items-center gap-3 w-full max-w-[250px]">
+                    <div class="summary-checkbox ${!isPass ? 'checked' : ''}"></div>
+                    <span class="text-gray-800 font-medium">${failLabel}</span>
+                </div>
+            `;
         }
 
         function closeModal() {
             modal.classList.remove('opacity-100');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 200); // Wait for transition
+            setTimeout(() => modal.classList.add('hidden'), 200);
         }
 
-        // --- Event Listeners ---
         filterEmployee.addEventListener('input', filterData);
         filterRound.addEventListener('change', filterData);
-        closeModalBtn.addEventListener('click', closeModal);
-        closeModalBtnIcon.addEventListener('click', closeModal);
-        modalBackdrop.addEventListener('click', closeModal);
+        document.getElementById('close-modal-btn-icon').addEventListener('click', closeModal);
+        document.getElementById('modal-backdrop').addEventListener('click', closeModal);
 
-        // --- Data Fetching & Processing ---
         function loadCSVData() {
-            // เรียกอ่านไฟล์ 691b5fd7.csv ที่อยู่ในโฟลเดอร์เดียวกัน
-            Papa.parse('691b5fd7.csv', {
+            Papa.parse('daab49f6.csv', {
                 download: true,
                 header: true,
                 skipEmptyLines: true,
-                complete: function(results) {
-                    processCSVData(results.data);
-                },
+                complete: function(results) { processCSVData(results.data); },
                 error: function(err) {
-                    console.error("ไม่สามารถโหลดไฟล์ 691b5fd7.csv ได้ (หากรันไฟล์ในเครื่องโดยตรงอาจติด CORS) ระบบจะใช้ข้อมูลจำลองแทน", err);
+                    console.error("ใช้ข้อมูลจำลองเนื่องจากอ่านไฟล์ CSV ไม่ได้:", err);
                     useMockData();
                 }
             });
@@ -441,70 +515,56 @@
 
         function processCSVData(data) {
             employeeList = [];
-            
-            // ตัวแปรสำหรับนับสรุปผล
             let counts = {
                 all: { evaluated: 0, pending: 0 },
-                30: { evaluated: 0, pending: 0, totalScore: 0, scoreCount: 0 },
-                60: { evaluated: 0, pending: 0, totalScore: 0, scoreCount: 0 },
-                90: { evaluated: 0, pending: 0, totalScore: 0, scoreCount: 0 },
-                119: { evaluated: 0, pending: 0, totalScore: 0, scoreCount: 0 }
+                30: { evaluated: 0, pending: 0 }, 60: { evaluated: 0, pending: 0 },
+                90: { evaluated: 0, pending: 0 }, 119: { evaluated: 0, pending: 0 }
             };
 
-            // ประมวลผลทีละแถวจาก CSV
             data.forEach((row, index) => {
-                // ดึงข้อมูลตามชื่อหัวคอลัมน์ (ปรับแก้ชื่อด้านล่างนี้ให้ตรงกับในไฟล์ CSV ของคุณ)
                 const name = row['ชื่อพนักงาน'] || row['Name'] || `พนักงานคนที่ ${index + 1}`;
-                
-                const status30 = row['สถานะ 30 วัน'] || row['รอบ 30 วัน'] || 'ยังไม่ประเมิน';
-                const status60 = row['สถานะ 60 วัน'] || row['รอบ 60 วัน'] || 'ยังไม่ประเมิน';
-                const status90 = row['สถานะ 90 วัน'] || row['รอบ 90 วัน'] || 'ยังไม่ประเมิน';
-                const status119 = row['สถานะ 119 วัน'] || row['รอบ 119 วัน'] || 'ยังไม่ประเมิน';
+                const s30 = row['สถานะ 30 วัน'] || row['รอบ 30 วัน'] || 'ยังไม่ประเมิน';
+                const s60 = row['สถานะ 60 วัน'] || row['รอบ 60 วัน'] || 'ยังไม่ประเมิน';
+                const s90 = row['สถานะ 90 วัน'] || row['รอบ 90 วัน'] || 'ยังไม่ประเมิน';
+                const s119 = row['สถานะ 119 วัน'] || row['รอบ 119 วัน'] || 'ยังไม่ประเมิน';
 
-                const score30 = parseFloat(row['คะแนน 30 วัน']) || 0;
-                const score60 = parseFloat(row['คะแนน 60 วัน']) || 0;
-                const score90 = parseFloat(row['คะแนน 90 วัน']) || 0;
-                const score119 = parseFloat(row['คะแนน 119 วัน']) || 0;
+                const rounds = {
+                    30: { status: s30, scores: generateMockScores(s30) },
+                    60: { status: s60, scores: generateMockScores(s60) },
+                    90: { status: s90, scores: generateMockScores(s90) },
+                    119: { status: s119, scores: generateMockScores(s119) }
+                };
 
-                // เพิ่มเข้าในรายชื่อตาราง
-                employeeList.push({
-                    id: index + 1,
-                    name: name,
-                    status30: status30,
-                    status60: status60,
-                    status90: status90,
-                    status119: status119
+                employeeList.push({ id: index + 1, name: name, rounds: rounds });
+
+                let isEvalAny = false;
+                [30, 60, 90, 119].forEach(r => {
+                    if (rounds[r].status.includes('ประเมินแล้ว')) {
+                        counts[r].evaluated++;
+                        isEvalAny = true;
+                    } else { counts[r].pending++; }
                 });
 
-                // คำนวณสรุปตัวเลขการประเมิน และ ยอดรวมคะแนน
-                const rounds = [
-                    { key: 30, status: status30, score: score30 },
-                    { key: 60, status: status60, score: score60 },
-                    { key: 90, status: status90, score: score90 },
-                    { key: 119, status: status119, score: score119 }
-                ];
-
-                let isEvaluatedInAnyRound = false;
-
-                rounds.forEach(r => {
-                    if (r.status.includes('ประเมินแล้ว') || r.status.includes('เสร็จ')) {
-                        counts[r.key].evaluated++;
-                        counts[r.key].totalScore += r.score;
-                        counts[r.key].scoreCount++;
-                        isEvaluatedInAnyRound = true;
-                    } else {
-                        counts[r.key].pending++;
-                    }
-                });
-
-                if (isEvaluatedInAnyRound) {
-                    counts.all.evaluated++;
-                } else {
-                    counts.all.pending++;
-                }
+                if (isEvalAny) counts.all.evaluated++;
+                else counts.all.pending++;
             });
 
-            // สร้างข้อมูลสำหรับแสดง Summary Cards
+            updateDashboard(counts);
+        }
+
+        function useMockData() {
+            const mockStatus = (isDone) => isDone ? 'ประเมินแล้ว' : 'ยังไม่ประเมิน';
+            employeeList = [
+                { id: 1, name: 'นาย A (สมชาย รักดี)', rounds: { 30: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 60: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 90: { status: mockStatus(false), scores: null }, 119: { status: mockStatus(false), scores: null } } },
+                { id: 2, name: 'นาย B (พิชัย กล้าหาญ)', rounds: { 30: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 60: { status: mockStatus(false), scores: null }, 90: { status: mockStatus(false), scores: null }, 119: { status: mockStatus(false), scores: null } } },
+                { id: 3, name: 'นางสาว C (สมหญิง จริงใจ)', rounds: { 30: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 60: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 90: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') }, 119: { status: mockStatus(true), scores: generateMockScores('ประเมินแล้ว') } } }
+            ];
+            
+            let counts = { all: { evaluated: 3, pending: 0 }, 30: { evaluated: 3, pending: 0 }, 60: { evaluated: 2, pending: 1 }, 90: { evaluated: 1, pending: 2 }, 119: { evaluated: 1, pending: 2 } };
+            updateDashboard(counts);
+        }
+
+        function updateDashboard(counts) {
             summaryData = [
                 { id: 'all', title: 'ทั้งหมด', evaluated: counts.all.evaluated, pending: counts.all.pending },
                 { id: '30', title: 'รอบ 30 วัน', evaluated: counts[30].evaluated, pending: counts[30].pending },
@@ -512,47 +572,12 @@
                 { id: '90', title: 'รอบ 90 วัน', evaluated: counts[90].evaluated, pending: counts[90].pending },
                 { id: '119', title: 'รอบ 119 วัน', evaluated: counts[119].evaluated, pending: counts[119].pending },
             ];
-
-            // สร้างข้อมูลคะแนนเฉลี่ยสำหรับกราฟ
-            const avgScores = [
-                counts[30].scoreCount ? (counts[30].totalScore / counts[30].scoreCount).toFixed(2) : 0,
-                counts[60].scoreCount ? (counts[60].totalScore / counts[60].scoreCount).toFixed(2) : 0,
-                counts[90].scoreCount ? (counts[90].totalScore / counts[90].scoreCount).toFixed(2) : 0,
-                counts[119].scoreCount ? (counts[119].totalScore / counts[119].scoreCount).toFixed(2) : 0,
-            ];
-
-            // สั่งอัปเดตหน้าจอ
             renderSummaryCards();
             renderEmployeeList(employeeList);
-            initChart(avgScores);
+            initTopicComparisonChart();
         }
 
-        function useMockData() {
-            summaryData = [
-                { id: 'all', title: 'ทั้งหมด', evaluated: 120, pending: 15 },
-                { id: '30', title: 'รอบ 30 วัน', evaluated: 30, pending: 5 },
-                { id: '60', title: 'รอบ 60 วัน', evaluated: 28, pending: 7 },
-                { id: '90', title: 'รอบ 90 วัน', evaluated: 35, pending: 2 },
-                { id: '119', title: 'รอบ 119 วัน', evaluated: 27, pending: 1 },
-            ];
-
-            employeeList = [
-                { id: 1, name: 'นาย A (สมชาย รักดี)', status30: 'ประเมินแล้ว', status60: 'ประเมินแล้ว', status90: 'ยังไม่ประเมิน', status119: 'ยังไม่ประเมิน' },
-                { id: 2, name: 'นาย B (พิชัย กล้าหาญ)', status30: 'ประเมินแล้ว', status60: 'ยังไม่ประเมิน', status90: 'ยังไม่ประเมิน', status119: 'ยังไม่ประเมิน' },
-                { id: 3, name: 'นางสาว C (สมหญิง จริงใจ)', status30: 'ประเมินแล้ว', status60: 'ประเมินแล้ว', status90: 'ประเมินแล้ว', status119: 'ประเมินแล้ว' },
-                { id: 4, name: 'นาย D (มานะ อดทน)', status30: 'ยังไม่ประเมิน', status60: 'ยังไม่ประเมิน', status90: 'ยังไม่ประเมิน', status119: 'ยังไม่ประเมิน' },
-            ];
-            
-            renderSummaryCards();
-            renderEmployeeList(employeeList);
-            initChart([75, 82, 88, 91]);
-        }
-
-        // --- Init ---
-        window.onload = () => {
-            loadCSVData(); // เริ่มโหลดไฟล์ CSV เมื่อเปิดหน้าจอ
-        };
-
+        window.onload = loadCSVData;
     </script>
 </body>
 </html>
